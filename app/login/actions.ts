@@ -1,5 +1,5 @@
 "use server";
-
+import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
@@ -60,4 +60,12 @@ export async function signup(formData: FormData) {
 
   revalidatePath("/", "layout");
   redirect("/dashboard?message=Conta criada com sucesso! Bem-vindo.");
+}
+
+export async function logout(): Promise<void> {
+  const cookieStore = await cookies();
+
+  cookieStore.delete("auth_token");
+
+  redirect("/login");
 }

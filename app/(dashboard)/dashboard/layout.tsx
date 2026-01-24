@@ -1,4 +1,23 @@
-import { LayoutDashboard, Users, LogOut, Settings } from "lucide-react";
+"use client"; // Adicionado para permitir interatividade (Dropdown)
+
+import {
+  LogOut,
+  MoreVertical,
+  User,
+  Settings,
+  LayoutDashboard, // Adicionado
+  Users, // Adicionado
+} from "lucide-react";
+
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { logout } from "../../login/actions";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -28,7 +47,7 @@ export default function DashboardLayout({
             Dashboard
           </Link>
           <Link
-            href="/dashboard/clientes"
+            href="/dashboard/clients"
             className="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-500 hover:bg-slate-50 hover:text-slate-900 transition-all"
           >
             <Users size={20} />
@@ -37,24 +56,65 @@ export default function DashboardLayout({
         </nav>
 
         {/* Perfil no Rodapé da Sidebar */}
-        <div className="border-t border-slate-100 pt-6 space-y-4">
-          <div className="flex items-center gap-3 px-2">
-            <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-600">
-              J
-            </div>
-            <div className="flex flex-col">
-              <span className="text-sm font-semibold">Jilem</span>
-              <span className="text-xs text-slate-400">loja@jilem.com</span>
-            </div>
-          </div>
-          <button className="flex items-center gap-3 px-3 py-2 w-full text-slate-500 hover:text-red-600 transition-colors">
-            <LogOut size={18} />
-            <span className="text-sm font-medium">Sair</span>
-          </button>
+        <div className="border-t border-slate-100 pt-6">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="flex items-center justify-between w-full p-2 rounded-xl hover:bg-slate-50 transition-all outline-none group">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center font-bold text-slate-600 border border-slate-200 shadow-sm">
+                    JM
+                  </div>
+                  <div className="flex flex-col text-left">
+                    <span className="text-sm font-bold text-slate-900 leading-none">
+                      Jilem Modas
+                    </span>
+                    <span className="text-xs text-slate-400 mt-1">
+                      admin@jilem.com
+                    </span>
+                  </div>
+                </div>
+                <MoreVertical
+                  size={18}
+                  className="text-slate-400 group-hover:text-slate-600 transition-colors"
+                />
+              </button>
+            </DropdownMenuTrigger>
+
+            <DropdownMenuContent
+              align="end"
+              side="right"
+              className="w-56 mb-2 shadow-2xl border-slate-200"
+            >
+              <DropdownMenuLabel className="text-slate-500 font-semibold text-xs uppercase tracking-widest">
+                Minha Conta
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator className="bg-slate-100" />
+
+              <DropdownMenuItem className="gap-2 py-3 cursor-pointer text-slate-600 focus:bg-slate-50 focus:text-slate-900">
+                <User size={16} />
+                Perfil da Loja
+              </DropdownMenuItem>
+
+              <DropdownMenuItem className="gap-2 py-3 cursor-pointer text-slate-600 focus:bg-slate-50 focus:text-slate-900">
+                <Settings size={16} />
+                Configurações
+              </DropdownMenuItem>
+
+              <DropdownMenuSeparator className="bg-slate-100" />
+
+              <form action={logout}>
+                <button type="submit" className="w-full text-left">
+                  <DropdownMenuItem className="gap-2 py-3 cursor-pointer text-red-600 focus:bg-red-50 focus:text-red-700 font-medium">
+                    <LogOut size={16} />
+                    Sair do Sistema
+                  </DropdownMenuItem>
+                </button>
+              </form>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </aside>
 
-      {/* Conteúdo Principal */}
       <main className="flex-1 overflow-y-auto bg-slate-50/30 p-8">
         {children}
       </main>

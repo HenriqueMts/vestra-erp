@@ -1,4 +1,12 @@
-import { pgTable, text, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  text,
+  timestamp,
+  uuid,
+  varchar,
+  pgEnum,
+  uniqueIndex,
+} from "drizzle-orm/pg-core";
 
 export const profiles = pgTable("profiles", {
   id: uuid("id").primaryKey(),
@@ -7,18 +15,33 @@ export const profiles = pgTable("profiles", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-export const clients = pgTable("clients", {
-  id: uuid("id").defaultRandom().primaryKey(),
+export const typeEnum = pgEnum("client_type", ["PF", "PJ"]);
 
-  userId: uuid("user_id")
-    .notNull()
-    .references(() => profiles.id, { onDelete: "cascade" }),
+export const clients = pgTable(
+  "clients",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => profiles.id, { onDelete: "cascade" }),
 
-  name: text("name").notNull(),
-  document: varchar("document", { length: 18 }).notNull(),
-  phone: varchar("phone", { length: 20 }),
-  email: text("email"),
+    name: text("name").notNull(),
+    type: typeEnum("type").notNull().default("PF"),
 
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
+    document: varchar("document", { length: 18 }).notNull(),
+
+    phone: varchar("phone", { length: 20 }),
+    email: text("email"),
+
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
+  },
+  (table) => {
+    return {
+      uniqueDocumentPerStore: uniqueIndex("unique_document_per_store").on(
+        table.userId,
+        table.document,
+      ),
+    };
+  },
+);
