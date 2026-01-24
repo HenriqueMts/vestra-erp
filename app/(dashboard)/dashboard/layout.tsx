@@ -4,6 +4,7 @@ import { createClient } from "@/utils/supabase/server";
 import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { AppSidebar } from "@/components/app-sidebar";
+import { Footer } from "@/components/footer"; // 1. Importação adicionada
 
 export default async function DashboardLayout({
   children,
@@ -43,8 +44,10 @@ export default async function DashboardLayout({
     <div className="flex h-screen bg-white text-slate-900 flex-col md:flex-row overflow-hidden">
       <AppSidebar user={userData} />
 
-      <main className="flex-1 overflow-y-auto overflow-x-hidden bg-slate-50/30 p-4 pt-16 md:p-8 md:pt-8 md:ml-64 w-full">
-        {children}
+      <main className="flex-1 flex flex-col overflow-y-auto overflow-x-hidden bg-slate-50/30 md:ml-64 w-full">
+        <div className="flex-1 p-4 pt-16 md:p-8 md:pt-8">{children}</div>
+
+        <Footer />
       </main>
     </div>
   );

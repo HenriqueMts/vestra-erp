@@ -164,12 +164,12 @@ export function ClientRowActions({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-col-reverse sm:flex-row gap-2 sm:gap-0">
-            <AlertDialogCancel className="text-xs sm:text-sm">
+            <AlertDialogCancel className="text-xs sm:text-sm ">
               Cancelar
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
-              className="bg-red-600 hover:bg-red-700 text-white text-xs sm:text-sm"
+              className=" ml-2  bg-red-600 hover:bg-red-700 text-white text-xs sm:text-sm"
             >
               Sim, excluir cliente
             </AlertDialogAction>
