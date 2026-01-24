@@ -3,12 +3,27 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { OverviewChart } from "./components/overview-chart";
 import { RecentClients } from "./components/recent-clients";
 import { getDashboardMetrics } from "@/services/dashboard-service";
+import { createClient } from "@/utils/supabase/server"; // Importar Supabase
+import { redirect } from "next/navigation";
 
 export default async function DashboardPage() {
+  // 1. Obter Usuário Logado
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  // Segurança extra: se não tiver user, manda pro login
+  if (!user) {
+    redirect("/login");
+  }
+
+  // 2. Passar o ID do usuário para o serviço
   const { totalClients, newClients, recentClients, chartData } =
-    await getDashboardMetrics();
+    await getDashboardMetrics(user.id);
 
   return (
+    // ... (O restante do JSX permanece EXATAMENTE igual)
     <div className="space-y-6">
       <div className="space-y-1">
         <h2 className="text-3xl font-bold tracking-tight text-slate-900">
@@ -19,7 +34,6 @@ export default async function DashboardPage() {
         </p>
       </div>
 
-      {/* 1. TOPO: Cards de Métricas (Lado a Lado) */}
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -52,7 +66,6 @@ export default async function DashboardPage() {
         </Card>
       </div>
 
-      {/* 2. MEIO: Gráfico Gigante (Ocupando toda a largura) */}
       <Card className="col-span-4">
         <CardHeader>
           <CardTitle>Visão Geral de Cadastros</CardTitle>
@@ -60,13 +73,11 @@ export default async function DashboardPage() {
             Acompanhamento de novos clientes nos últimos 6 meses.
           </p>
         </CardHeader>
-        {/* Aumentei a altura para 450px para dar o destaque de "80%" visual que você pediu */}
         <CardContent className="pl-2 h-[450px]">
           <OverviewChart data={chartData} />
         </CardContent>
       </Card>
 
-      {/* 3. BAIXO: Lista de Clientes (Mesma largura do Gráfico) */}
       <Card className="col-span-4">
         <CardHeader>
           <CardTitle>Últimos Clientes Adicionados</CardTitle>
@@ -75,7 +86,6 @@ export default async function DashboardPage() {
           </p>
         </CardHeader>
         <CardContent>
-          {/* A lista vai se esticar automaticamente para ocupar a largura total */}
           <RecentClients clients={recentClients} />
         </CardContent>
       </Card>

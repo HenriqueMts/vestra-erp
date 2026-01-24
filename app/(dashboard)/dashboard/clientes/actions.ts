@@ -24,7 +24,6 @@ export async function createClientAction(
     return { success: false, message: "Usuário não autenticado" };
   }
 
-  // 1. Limpeza
   const rawDocument = (formData.get("document") as string) || "";
   const rawPhone = (formData.get("phone") as string) || "";
   const email = (formData.get("email") as string) || "";
@@ -118,7 +117,6 @@ export async function updateClientAction(
   if (!clientId)
     return { success: false, message: "ID do cliente não fornecido" };
 
-  // 1. Limpeza
   const rawDocument = (formData.get("document") as string) || "";
   const rawPhone = (formData.get("phone") as string) || "";
   const cleanDocument = rawDocument.replace(/\D/g, "");
@@ -132,7 +130,6 @@ export async function updateClientAction(
     phone: cleanPhone,
   };
 
-  // 2. Validação Zod
   const validationResult = clientSchema.safeParse(rawData);
   if (!validationResult.success) {
     return {

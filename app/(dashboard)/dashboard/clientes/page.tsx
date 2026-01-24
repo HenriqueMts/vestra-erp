@@ -28,7 +28,7 @@ import {
 } from "@/utils/mask";
 import { ClientFilter } from "./components/client-filter";
 import { ClientPagination } from "./components/client-pagination";
-import { ClientRowActions } from "./components/client-row-actions"; // <--- Novo Import
+import { ClientRowActions } from "./components/client-row-actions";
 
 const ITEMS_PER_PAGE = 20;
 
@@ -80,42 +80,42 @@ export default async function ClientesPage({
   const isFilteredEmpty = query.length > 0 && totalItems === 0;
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6 min-h-[80vh] flex flex-col">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div className="space-y-1">
-          <p className="text-xs text-slate-400 font-medium flex items-center gap-2">
+    <div className="w-full space-y-6 min-h-[80vh] flex flex-col">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+        <div className="space-y-1 w-full sm:w-auto">
+          <p className="text-xs text-slate-400 font-medium flex items-center gap-2 overflow-x-auto whitespace-nowrap">
             Menu Principal <span className="text-slate-300">/</span>{" "}
             <span className="text-slate-900">Clientes</span>
           </p>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
             Clientes
           </h1>
         </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
           {(hasClients || query) && <ClientFilter />}
           {(hasClients || query) && <ModalCadastro />}
         </div>
       </div>
 
       {!hasClients && !query ? (
-        <div className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-3xl bg-white/50 space-y-4 p-12">
-          <div className="bg-slate-100 p-4 rounded-full text-slate-400">
-            <Users size={48} />
+        <div className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-2xl sm:rounded-3xl bg-white/50 space-y-4 p-6 sm:p-12">
+          <div className="bg-slate-100 p-3 sm:p-4 rounded-full text-slate-400">
+            <Users size={40} className="sm:w-12 sm:h-12" />
           </div>
           <div className="text-center space-y-1">
-            <h3 className="text-xl font-semibold text-slate-900">
+            <h3 className="text-lg sm:text-xl font-semibold text-slate-900">
               Nenhum cliente cadastrado
             </h3>
-            <p className="text-slate-500 max-w-xs">
+            <p className="text-slate-500 text-sm sm:text-base max-w-xs">
               Comece adicionando seus clientes para gerenciar as vendas.
             </p>
           </div>
           <ModalCadastro centralizado />
         </div>
       ) : (
-        <div className="space-y-4">
-          <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
+        <div className="space-y-4 w-full">
+          <div className="hidden md:block bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
             <Table>
               <TableHeader className="bg-slate-50/50">
                 <TableRow>
@@ -131,7 +131,6 @@ export default async function ClientesPage({
                   <TableHead className="text-[11px] font-bold text-slate-400 uppercase tracking-wider py-4">
                     Telefone
                   </TableHead>
-                  {/* Coluna vazia para o botão de ações */}
                   <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
               </TableHeader>
@@ -139,7 +138,7 @@ export default async function ClientesPage({
                 {isFilteredEmpty ? (
                   <TableRow>
                     <TableCell
-                      colSpan={5} // Ajustado para 5 colunas
+                      colSpan={5}
                       className="h-24 text-center text-slate-500"
                     >
                       Nenhum resultado encontrado para &quot;{query}&quot;
@@ -159,13 +158,12 @@ export default async function ClientesPage({
                           ? normalizeCnpj(client.document)
                           : normalizeCpf(client.document)}
                       </TableCell>
-                      <TableCell className="text-slate-500">
+                      <TableCell className="text-slate-500 text-sm">
                         {client.email || "-"}
                       </TableCell>
-                      <TableCell className="text-slate-500">
+                      <TableCell className="text-slate-500 text-sm">
                         {normalizePhoneNumber(client.phone || "")}
                       </TableCell>
-
                       <TableCell>
                         <ClientRowActions
                           id={client.id}
@@ -181,6 +179,60 @@ export default async function ClientesPage({
                 )}
               </TableBody>
             </Table>
+          </div>
+
+          <div className="md:hidden space-y-3">
+            {isFilteredEmpty ? (
+              <div className="text-center py-8 text-slate-500">
+                Nenhum resultado encontrado para &quot;{query}&quot;
+              </div>
+            ) : (
+              allClients.map((client) => (
+                <div
+                  key={client.id}
+                  className="bg-white rounded-lg border border-slate-100 shadow-sm p-4 space-y-3"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-bold text-slate-900 text-sm break-words">
+                        {client.name}
+                      </h3>
+                      <p className="text-xs text-slate-500 font-mono mt-1">
+                        {client.type === "PJ"
+                          ? normalizeCnpj(client.document)
+                          : normalizeCpf(client.document)}
+                      </p>
+                    </div>
+                    <ClientRowActions
+                      id={client.id}
+                      name={client.name}
+                      email={client.email}
+                      phone={client.phone}
+                      document={client.document}
+                      type={client.type}
+                    />
+                  </div>
+                  <div className="space-y-2 pt-2 border-t border-slate-100">
+                    <div>
+                      <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider">
+                        E-mail
+                      </p>
+                      <p className="text-sm text-slate-700 break-all">
+                        {client.email || "-"}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider">
+                        Telefone
+                      </p>
+                      <p className="text-sm text-slate-700">
+                        {normalizePhoneNumber(client.phone || "") || "-"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
 
           <ClientPagination currentPage={currentPage} totalPages={totalPages} />

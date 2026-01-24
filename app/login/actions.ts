@@ -65,12 +65,9 @@ export async function signup(formData: FormData) {
 export async function logout() {
   const supabase = await createClient();
 
-  // 1. Destrói a sessão no servidor (remove os cookies)
   await supabase.auth.signOut();
 
-  // 2. Limpa o cache do Next.js para garantir que o layout não mostre dados antigos
   revalidatePath("/", "layout");
 
-  // 3. Redireciona para o login
   redirect("/login");
 }

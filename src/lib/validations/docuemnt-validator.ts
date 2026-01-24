@@ -21,7 +21,6 @@ export function isValidCNPJ(cnpj: string): boolean {
   cnpj = cnpj.replace(/[^\d]+/g, "");
 
   if (cnpj.length !== 14) return false;
-  // Elimina CNPJs com todos os dígitos iguais
   if (!!cnpj.match(/(\d)\1{13}/)) return false;
 
   const validate = (t: number) => {

@@ -9,7 +9,7 @@ export function ClientFilter() {
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const { replace } = useRouter();
-  const [isPending, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
 
   const handleSearch = (term: string) => {
     const params = new URLSearchParams(searchParams);
@@ -28,11 +28,11 @@ export function ClientFilter() {
   };
 
   return (
-    <div className="relative w-full max-w-sm">
-      <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" />
+    <div className="relative w-full">
+      <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-400 z-10" />
       <Input
-        placeholder="Buscar por nome, CPF ou CNPJ..."
-        className="pl-9 bg-white"
+        placeholder="Buscar cliente..."
+        className="pl-9 bg-white text-sm"
         defaultValue={searchParams.get("q")?.toString()}
         onChange={(e) => {
           const value = e.target.value;

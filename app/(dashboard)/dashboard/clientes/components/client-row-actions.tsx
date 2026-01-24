@@ -38,7 +38,6 @@ import { toast } from "sonner";
 import { ClientForm } from "./client-form";
 import { deleteClientAction } from "../actions";
 
-// Estendemos a interface para receber todos os dados necessários para edição
 interface ClientRowActionsProps {
   id: string;
   name: string;
@@ -87,81 +86,90 @@ export function ClientRowActions({
 
   return (
     <>
-      {/* Dropdown Menu Principal */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="h-8 w-8 p-0">
+          <Button
+            variant="ghost"
+            className="h-8 w-8 p-0 hover:bg-slate-100"
+            title="Mais ações"
+          >
             <span className="sr-only">Abrir menu</span>
             <MoreHorizontal className="h-4 w-4 text-slate-400" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuLabel>Ações</DropdownMenuLabel>
+        <DropdownMenuContent align="end" className="w-48 sm:w-56">
+          <DropdownMenuLabel className="text-xs sm:text-sm">
+            Ações
+          </DropdownMenuLabel>
 
           <DropdownMenuItem
             onClick={handleSendEmail}
-            className="cursor-pointer gap-2"
+            className="cursor-pointer gap-2 text-xs sm:text-sm"
           >
-            <Mail className="h-4 w-4 text-slate-500" /> Enviar E-mail
+            <Mail className="h-4 w-4 text-slate-500 shrink-0" /> Enviar E-mail
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={handleWhatsApp}
-            className="cursor-pointer gap-2"
+            className="cursor-pointer gap-2 text-xs sm:text-sm"
           >
-            <MessageCircle className="h-4 w-4 text-emerald-600" /> WhatsApp
+            <MessageCircle className="h-4 w-4 text-emerald-600 shrink-0" />{" "}
+            WhatsApp
           </DropdownMenuItem>
 
           <DropdownMenuSeparator />
 
           <DropdownMenuItem
             onClick={() => setIsEditOpen(true)}
-            className="cursor-pointer gap-2"
+            className="cursor-pointer gap-2 text-xs sm:text-sm text-blue-600 focus:text-blue-700 focus:bg-blue-50"
           >
-            <Pencil className="h-4 w-4 text-blue-600" /> Editar
+            <Pencil className="h-4 w-4 shrink-0" /> Editar
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() => setIsDeleteOpen(true)}
-            className="cursor-pointer gap-2 text-red-600 focus:text-red-700 focus:bg-red-50"
+            className="cursor-pointer gap-2 text-xs sm:text-sm text-red-600 focus:text-red-700 focus:bg-red-50"
           >
-            <Trash2 className="h-4 w-4" /> Excluir
+            <Trash2 className="h-4 w-4 shrink-0" /> Excluir
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
 
-      {/* Modal de Edição */}
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-        <DialogContent className="sm:max-w-[500px] bg-white">
+        <DialogContent className="w-[95vw] sm:max-w-[500px] bg-white max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Editar Cliente</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-lg sm:text-xl">
+              Editar Cliente
+            </DialogTitle>
+            <DialogDescription className="text-xs sm:text-sm">
               Faça as alterações necessárias nos dados de {name}.
             </DialogDescription>
           </DialogHeader>
-          {/* Passamos os dados atuais para preencher o form */}
           <ClientForm
             initialData={{ id, name, email, phone, document, type }}
-            onSuccess={() => setIsEditOpen(false)} // Fecha modal ao salvar
+            onSuccess={() => setIsEditOpen(false)}
           />
         </DialogContent>
       </Dialog>
 
-      {/* Alerta de Confirmação de Exclusão */}
       <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
-        <AlertDialogContent className="bg-white">
+        <AlertDialogContent className="bg-white w-[95vw] sm:max-w-[425px]">
           <AlertDialogHeader>
-            <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogTitle className="text-lg sm:text-xl">
+              Você tem certeza?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-xs sm:text-sm">
               Essa ação não pode ser desfeita. Isso excluirá permanentemente o
               cliente
               <span className="font-bold text-slate-900"> {name} </span>e
               removerá seus dados dos nossos servidores.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+          <AlertDialogFooter className="flex-col-reverse sm:flex-row gap-2 sm:gap-0">
+            <AlertDialogCancel className="text-xs sm:text-sm">
+              Cancelar
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
-              className="bg-red-600 hover:bg-red-700 text-white"
+              className="bg-red-600 hover:bg-red-700 text-white text-xs sm:text-sm"
             >
               Sim, excluir cliente
             </AlertDialogAction>

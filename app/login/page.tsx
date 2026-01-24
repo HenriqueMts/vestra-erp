@@ -10,17 +10,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Suspense } from "react";
-import { AuthFeedback } from "@/components/auth-feedback";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Image from "next/image";
 
 export default function LoginPage() {
   return (
     <div className="flex min-h-screen w-full items-center justify-center bg-white px-4">
-      <Suspense fallback={null}>
-        <AuthFeedback />
-      </Suspense>
+      {/* Ajustado para um max-width padrão e estável */}
       <div className="w-full max-w-[450px] space-y-8">
         <div className="flex flex-col items-center space-y-2 text-center">
           <Image
@@ -37,16 +33,16 @@ export default function LoginPage() {
         </div>
 
         <Tabs defaultValue="login" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-8 bg-slate-100/50 p-1 border border-slate-200">
+          <TabsList className="grid w-full grid-cols-2 gap-1 mb-8 h-12 bg-slate-100 p-1 rounded-lg border border-slate-200/80">
             <TabsTrigger
               value="login"
-              className="data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm transition-all duration-300"
+              className="text-xs sm:text-sm font-medium text-slate-600 data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm rounded-md transition-all duration-200"
             >
               Entrar
             </TabsTrigger>
             <TabsTrigger
               value="register"
-              className="data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm transition-all duration-300"
+              className="text-xs sm:text-sm font-medium text-slate-600 data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-sm rounded-md transition-all duration-200"
             >
               Cadastrar
             </TabsTrigger>

@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Toaster } from "@/components/ui/sonner";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
@@ -13,9 +13,18 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+};
+
 export const metadata: Metadata = {
   title: "Jilem Modas CRM",
   description: "CRM para gestão de clientes da Jilem Modas",
+  icons: {
+    icon: "/jilem-logo.svg",
+  },
 };
 
 export default function RootLayout({
@@ -25,8 +34,11 @@ export default function RootLayout({
 }>) {
   return (
     <html className="w-full" lang="pt-BR">
+      <head>
+        <link rel="icon" href="/jilem-logo.svg" type="image/svg+xml" />
+      </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased w-full overflow-x-hidden`}
       >
         {children}
         <Toaster position="top-right" richColors />

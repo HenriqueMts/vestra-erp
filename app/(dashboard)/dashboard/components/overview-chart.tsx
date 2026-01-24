@@ -30,7 +30,7 @@ export function OverviewChart({ data }: OverviewChartProps) {
           tickLine={false}
           axisLine={false}
           tickFormatter={(value) => `${value}`}
-          allowDecimals={false} // Apenas números inteiros (não existe meio cliente)
+          allowDecimals={false}
         />
         <Tooltip
           contentStyle={{
@@ -43,7 +43,7 @@ export function OverviewChart({ data }: OverviewChartProps) {
         <Line
           type="monotone"
           dataKey="total"
-          stroke="#0f172a" // Cor Slate-900 (Preto Jilem)
+          stroke="#0f172a"
           strokeWidth={2}
           activeDot={{ r: 6 }}
         />

@@ -12,7 +12,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-// Importe a nova action updateClientAction
 import { createClientAction, updateClientAction } from "../actions";
 import {
   normalizeCnpj,
@@ -20,11 +19,10 @@ import {
   normalizePhoneNumber,
 } from "@/utils/mask";
 
-// Tipo para os dados iniciais (opcional)
 type ClientData = {
   id: string;
   name: string;
-  type: "PF" | "PJ" | string; // string para acomodar o DB enum
+  type: "PF" | "PJ" | string;
   document: string;
   email: string | null;
   phone: string | null;
@@ -32,9 +30,8 @@ type ClientData = {
 
 export function ClientForm({
   onSuccess,
-  initialData, // Nova prop
+  initialData,
 }: Readonly<{ onSuccess?: () => void; initialData?: ClientData }>) {
-  // Inicializa estados com os dados existentes ou vazio
   const [phone, setPhone] = useState(
     initialData?.phone ? normalizePhoneNumber(initialData.phone) : "",
   );
@@ -56,11 +53,9 @@ export function ClientForm({
     let result;
 
     if (initialData) {
-      // MODO EDIÇÃO
-      formData.append("id", initialData.id); // Anexa o ID obrigatório para update
+      formData.append("id", initialData.id);
       result = await updateClientAction(formData);
     } else {
-      // MODO CRIAÇÃO
       result = await createClientAction(formData);
     }
 
@@ -89,28 +84,32 @@ export function ClientForm({
   return (
     <form action={handleSubmit} className="space-y-4 pt-4">
       <div className="grid gap-2">
-        <Label htmlFor="name">Nome / Razão Social</Label>
+        <Label htmlFor="name" className="text-sm font-medium">
+          Nome / Razão Social
+        </Label>
         <Input
           id="name"
           name="name"
           required
           placeholder="João Silva ou Empresa LTDA"
-          defaultValue={initialData?.name} // Preenche se existir
+          defaultValue={initialData?.name}
+          className="text-base"
         />
       </div>
 
       <div className="grid gap-2">
-        <Label htmlFor="type">Tipo de Cliente</Label>
+        <Label htmlFor="type" className="text-sm font-medium">
+          Tipo de Cliente
+        </Label>
         <Select
           name="type"
-          value={type} // Controlado pelo estado
+          value={type}
           onValueChange={(val) => {
             setType(val as "PF" | "PJ");
-            // Só limpa documento se o usuário mudar o tipo manualmente, não na carga inicial
             if (val !== initialData?.type) setDocument("");
           }}
         >
-          <SelectTrigger>
+          <SelectTrigger className="text-base">
             <SelectValue placeholder="Selecione o tipo" />
           </SelectTrigger>
           <SelectContent>
@@ -120,9 +119,11 @@ export function ClientForm({
         </Select>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="grid gap-2">
-          <Label htmlFor="document">{type === "PF" ? "CPF" : "CNPJ"}</Label>
+          <Label htmlFor="document" className="text-sm font-medium">
+            {type === "PF" ? "CPF" : "CNPJ"}
+          </Label>
           <Input
             id="document"
             name="document"
@@ -133,10 +134,13 @@ export function ClientForm({
             value={document}
             onChange={handleDocumentChange}
             maxLength={type === "PF" ? 14 : 18}
+            className="text-base"
           />
         </div>
         <div className="grid gap-2">
-          <Label htmlFor="phone">Telefone</Label>
+          <Label htmlFor="phone" className="text-sm font-medium">
+            Telefone
+          </Label>
           <Input
             id="phone"
             name="phone"
@@ -144,25 +148,29 @@ export function ClientForm({
             value={phone}
             onChange={handlePhoneChange}
             maxLength={15}
+            className="text-base"
           />
         </div>
       </div>
 
       <div className="grid gap-2">
-        <Label htmlFor="email">E-mail</Label>
+        <Label htmlFor="email" className="text-sm font-medium">
+          E-mail
+        </Label>
         <Input
           id="email"
           name="email"
           type="email"
           placeholder="cliente@email.com"
-          defaultValue={initialData?.email || ""} // Preenche se existir
+          defaultValue={initialData?.email || ""}
+          className="text-base"
         />
       </div>
 
       <div className="pt-4">
         <Button
           type="submit"
-          className="w-full bg-slate-900 text-white py-6"
+          className="w-full bg-slate-900 text-white py-5 sm:py-6 text-sm sm:text-base"
           disabled={isPending}
         >
           {isPending
