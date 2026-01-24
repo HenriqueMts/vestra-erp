@@ -1,12 +1,16 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import { db } from "@/db";
 import { profiles } from "@/db/schema";
 
-export async function login(formData: FormData) {
+type ActionResponse = {
+  success: boolean;
+  message?: string;
+};
+
+export async function login(formData: FormData): Promise<ActionResponse> {
   const supabase = await createClient();
 
   const email = formData.get("email") as string;
@@ -19,55 +23,56 @@ export async function login(formData: FormData) {
 
   if (error) {
     console.error("Erro ao entrar:", error.message);
-
-    return redirect(
-      `/login?error=${encodeURIComponent("Credenciais inválidas.")}`,
-    );
+    return { success: false, message: "Credenciais inválidas." };
   }
 
   revalidatePath("/", "layout");
-  redirect("/dashboard");
+  return { success: true };
 }
 
-export async function signup(formData: FormData) {
+export async function signup(formData: FormData): Promise<ActionResponse> {
   const supabase = await createClient();
 
-  const email = formData.get("email") as string;
-  const password = formData.get("password") as string;
-  const name = formData.get("name") as string;
+  const data = {
+    email: formData.get("email") as string,
+    password: formData.get("password") as string,
+    options: {
+      data: {
+        name: formData.get("name") as string,
+      },
+    },
+  };
 
-  const { data: authData, error: authError } = await supabase.auth.signUp({
-    email,
-    password,
-  });
+  const { error: signUpError, data: signUpData } =
+    await supabase.auth.signUp(data);
 
-  if (authError) {
-    console.error("Erro no Auth:", authError.message);
-    return redirect(`/login?error=${encodeURIComponent(authError.message)}`);
+  if (signUpError) {
+    return {
+      success: false,
+      message: "Erro ao criar conta: " + signUpError.message,
+    };
   }
 
-  if (authData.user) {
-    try {
+  try {
+    if (signUpData.user) {
       await db.insert(profiles).values({
-        id: authData.user.id,
-        name: name,
-        email: email,
+        id: signUpData.user.id,
+        name: formData.get("name") as string,
+        email: data.email,
       });
-    } catch (dbError) {
-      console.error("Erro ao criar perfil:", dbError);
     }
+  } catch (profileError) {
+    console.error("Erro ao criar perfil:", profileError);
   }
 
   revalidatePath("/", "layout");
-  redirect("/dashboard?message=Conta criada com sucesso! Bem-vindo.");
+  return { success: true };
 }
 
+import { redirect } from "next/navigation";
 export async function logout() {
   const supabase = await createClient();
-
   await supabase.auth.signOut();
-
   revalidatePath("/", "layout");
-
   redirect("/login");
 }

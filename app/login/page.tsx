@@ -1,7 +1,12 @@
+"use client";
+
+import { useState } from "react";
 import { login, signup } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation"; // Importante
 import {
   Card,
   CardContent,
@@ -14,9 +19,58 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Image from "next/image";
 
 export default function LoginPage() {
+  const [isPending, setIsPending] = useState(false);
+  const router = useRouter();
+
+  const handleLogin = async (formData: FormData) => {
+    setIsPending(true);
+    try {
+      const result = await login(formData);
+
+      if (result.success) {
+        toast.success("Bem-vindo de volta!");
+        router.push("/dashboard");
+      } else {
+        toast.error("Erro ao entrar", {
+          description: result.message,
+        });
+      }
+    } catch (error) {
+      toast.error("Erro inesperado", {
+        description: "Tente novamente mais tarde.",
+      });
+    } finally {
+    }
+
+    setTimeout(() => setIsPending(false), 2000);
+  };
+
+  const handleSignup = async (formData: FormData) => {
+    setIsPending(true);
+    try {
+      const result = await signup(formData);
+
+      if (result.success) {
+        toast.success("Conta criada com sucesso!", {
+          description: "Redirecionando para o dashboard...",
+        });
+        router.push("/dashboard");
+      } else {
+        toast.error("Erro no cadastro", {
+          description: result.message,
+        });
+        setIsPending(false);
+      }
+    } catch (error) {
+      toast.error("Erro no cadastro", {
+        description: "Não foi possível criar a conta.",
+      });
+      setIsPending(false);
+    }
+  };
+
   return (
     <div className="flex min-h-screen w-full items-center justify-center bg-white px-4">
-      {/* Ajustado para um max-width padrão e estável */}
       <div className="w-full max-w-[450px] space-y-8">
         <div className="flex flex-col items-center space-y-2 text-center">
           <Image
@@ -62,7 +116,7 @@ export default function LoginPage() {
                     Acesse sua conta para gerenciar pedidos e clientes.
                   </CardDescription>
                 </CardHeader>
-                <form id="login-form">
+                <form action={handleLogin} id="login-form">
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
                       <Label
@@ -100,11 +154,12 @@ export default function LoginPage() {
               </div>
               <CardFooter className="pb-8">
                 <Button
+                  type="submit"
                   form="login-form"
-                  formAction={login}
+                  disabled={isPending}
                   className="w-full bg-slate-900 hover:bg-black text-white py-6 text-lg transition-all shadow-md"
                 >
-                  Entrar no Sistema
+                  {isPending ? "Entrando..." : "Entrar no Sistema"}
                 </Button>
               </CardFooter>
             </Card>
@@ -124,7 +179,7 @@ export default function LoginPage() {
                     Registre sua loja de atacado em poucos segundos.
                   </CardDescription>
                 </CardHeader>
-                <form id="register-form">
+                <form action={handleSignup} id="register-form">
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
                       <Label
@@ -176,11 +231,12 @@ export default function LoginPage() {
               </div>
               <CardFooter className="pb-8">
                 <Button
+                  type="submit"
                   form="register-form"
-                  formAction={signup}
+                  disabled={isPending}
                   className="w-full bg-slate-900 hover:bg-black text-white py-6 text-lg transition-all shadow-md"
                 >
-                  Finalizar Cadastro
+                  {isPending ? "Criando conta..." : "Finalizar Cadastro"}
                 </Button>
               </CardFooter>
             </Card>
