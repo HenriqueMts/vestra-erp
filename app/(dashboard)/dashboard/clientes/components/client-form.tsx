@@ -1,15 +1,10 @@
 "use client";
 
 import { useState } from "react";
-
 import { Button } from "@/components/ui/button";
-
 import { Input } from "@/components/ui/input";
-
 import { Label } from "@/components/ui/label";
-
 import { toast } from "sonner";
-
 import {
   Select,
   SelectContent,
@@ -17,28 +12,57 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-import { createClientAction } from "../actions";
-
+// Importe a nova action updateClientAction
+import { createClientAction, updateClientAction } from "../actions";
 import {
   normalizeCnpj,
   normalizeCpf,
   normalizePhoneNumber,
 } from "@/utils/mask";
 
+// Tipo para os dados iniciais (opcional)
+type ClientData = {
+  id: string;
+  name: string;
+  type: "PF" | "PJ" | string; // string para acomodar o DB enum
+  document: string;
+  email: string | null;
+  phone: string | null;
+};
+
 export function ClientForm({
   onSuccess,
-}: Readonly<{ onSuccess?: () => void }>) {
-  const [phone, setPhone] = useState("");
-  const [document, setDocument] = useState("");
-  const [type, setType] = useState<"PF" | "PJ">("PF");
-
+  initialData, // Nova prop
+}: Readonly<{ onSuccess?: () => void; initialData?: ClientData }>) {
+  // Inicializa estados com os dados existentes ou vazio
+  const [phone, setPhone] = useState(
+    initialData?.phone ? normalizePhoneNumber(initialData.phone) : "",
+  );
+  const [document, setDocument] = useState(
+    initialData?.document
+      ? initialData.type === "PJ"
+        ? normalizeCnpj(initialData.document)
+        : normalizeCpf(initialData.document)
+      : "",
+  );
+  const [type, setType] = useState<"PF" | "PJ">(
+    (initialData?.type as "PF" | "PJ") || "PF",
+  );
   const [isPending, setIsPending] = useState(false);
 
   const handleSubmit = async (formData: FormData) => {
     setIsPending(true);
 
-    const result = await createClientAction(formData);
+    let result;
+
+    if (initialData) {
+      // MODO EDIÇÃO
+      formData.append("id", initialData.id); // Anexa o ID obrigatório para update
+      result = await updateClientAction(formData);
+    } else {
+      // MODO CRIAÇÃO
+      result = await createClientAction(formData);
+    }
 
     setIsPending(false);
 
@@ -46,7 +70,7 @@ export function ClientForm({
       toast.success(result.message);
       if (onSuccess) onSuccess();
     } else {
-      toast.error("Erro ao cadastrar", {
+      toast.error(initialData ? "Erro ao atualizar" : "Erro ao cadastrar", {
         description: result.message,
         duration: 5000,
       });
@@ -71,6 +95,7 @@ export function ClientForm({
           name="name"
           required
           placeholder="João Silva ou Empresa LTDA"
+          defaultValue={initialData?.name} // Preenche se existir
         />
       </div>
 
@@ -78,10 +103,11 @@ export function ClientForm({
         <Label htmlFor="type">Tipo de Cliente</Label>
         <Select
           name="type"
-          defaultValue="PF"
+          value={type} // Controlado pelo estado
           onValueChange={(val) => {
             setType(val as "PF" | "PJ");
-            setDocument("");
+            // Só limpa documento se o usuário mudar o tipo manualmente, não na carga inicial
+            if (val !== initialData?.type) setDocument("");
           }}
         >
           <SelectTrigger>
@@ -129,6 +155,7 @@ export function ClientForm({
           name="email"
           type="email"
           placeholder="cliente@email.com"
+          defaultValue={initialData?.email || ""} // Preenche se existir
         />
       </div>
 
@@ -138,7 +165,11 @@ export function ClientForm({
           className="w-full bg-slate-900 text-white py-6"
           disabled={isPending}
         >
-          {isPending ? "Salvando..." : "Salvar Cliente"}
+          {isPending
+            ? "Salvando..."
+            : initialData
+              ? "Salvar Alterações"
+              : "Cadastrar Cliente"}
         </Button>
       </div>
     </form>

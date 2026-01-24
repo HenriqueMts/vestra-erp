@@ -20,6 +20,8 @@ export function ClientFilter() {
       params.delete("q");
     }
 
+    params.set("page", "1");
+
     startTransition(() => {
       replace(`${pathname}?${params.toString()}`);
     });

@@ -2,7 +2,7 @@ import { Plus, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { db } from "@/db";
 import { clients } from "@/db/schema";
-import { eq, desc, and, or, ilike, sql } from "drizzle-orm"; // Adicionado sql
+import { eq, desc, and, or, ilike, sql } from "drizzle-orm";
 import { createClient } from "@/utils/supabase/server";
 import {
   Table,
@@ -27,7 +27,8 @@ import {
   normalizePhoneNumber,
 } from "@/utils/mask";
 import { ClientFilter } from "./components/client-filter";
-import { ClientPagination } from "./components/client-pagination"; // Novo Componente
+import { ClientPagination } from "./components/client-pagination";
+import { ClientRowActions } from "./components/client-row-actions"; // <--- Novo Import
 
 const ITEMS_PER_PAGE = 20;
 
@@ -63,8 +64,8 @@ export default async function ClientesPage({
   const allClients = await db.query.clients.findMany({
     where: whereConditions,
     orderBy: [desc(clients.createdAt)],
-    limit: ITEMS_PER_PAGE, // Traz apenas 20
-    offset: offset, // Pula os anteriores
+    limit: ITEMS_PER_PAGE,
+    offset: offset,
   });
 
   const [countResult] = await db
@@ -76,8 +77,6 @@ export default async function ClientesPage({
   const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
 
   const hasClients = totalItems > 0;
-
-  // Se tem busca ativa, não queremos mostrar o "Zero State", queremos mostrar "Nenhum resultado"
   const isFilteredEmpty = query.length > 0 && totalItems === 0;
 
   return (
@@ -93,15 +92,12 @@ export default async function ClientesPage({
           </h1>
         </div>
 
-        {/* Área de Ações: Filtro + Botão */}
         <div className="flex items-center gap-2 w-full sm:w-auto">
-          {/* Só mostra o filtro se tiver clientes cadastrados OU se já estiver filtrando */}
           {(hasClients || query) && <ClientFilter />}
           {(hasClients || query) && <ModalCadastro />}
         </div>
       </div>
 
-      {/* ESTADO VAZIO INICIAL (Sem clientes na conta e sem busca) */}
       {!hasClients && !query ? (
         <div className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-3xl bg-white/50 space-y-4 p-12">
           <div className="bg-slate-100 p-4 rounded-full text-slate-400">
@@ -135,13 +131,15 @@ export default async function ClientesPage({
                   <TableHead className="text-[11px] font-bold text-slate-400 uppercase tracking-wider py-4">
                     Telefone
                   </TableHead>
+                  {/* Coluna vazia para o botão de ações */}
+                  <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isFilteredEmpty ? (
                   <TableRow>
                     <TableCell
-                      colSpan={4}
+                      colSpan={5} // Ajustado para 5 colunas
                       className="h-24 text-center text-slate-500"
                     >
                       Nenhum resultado encontrado para &quot;{query}&quot;
@@ -167,6 +165,17 @@ export default async function ClientesPage({
                       <TableCell className="text-slate-500">
                         {normalizePhoneNumber(client.phone || "")}
                       </TableCell>
+
+                      <TableCell>
+                        <ClientRowActions
+                          id={client.id}
+                          name={client.name}
+                          email={client.email}
+                          phone={client.phone}
+                          document={client.document}
+                          type={client.type}
+                        />
+                      </TableCell>
                     </TableRow>
                   ))
                 )}
@@ -174,7 +183,6 @@ export default async function ClientesPage({
             </Table>
           </div>
 
-          {/* Adição da Paginação */}
           <ClientPagination currentPage={currentPage} totalPages={totalPages} />
         </div>
       )}

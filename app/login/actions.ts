@@ -1,5 +1,5 @@
 "use server";
-import { cookies } from "next/headers";
+
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
@@ -62,10 +62,15 @@ export async function signup(formData: FormData) {
   redirect("/dashboard?message=Conta criada com sucesso! Bem-vindo.");
 }
 
-export async function logout(): Promise<void> {
-  const cookieStore = await cookies();
+export async function logout() {
+  const supabase = await createClient();
 
-  cookieStore.delete("auth_token");
+  // 1. Destrói a sessão no servidor (remove os cookies)
+  await supabase.auth.signOut();
 
+  // 2. Limpa o cache do Next.js para garantir que o layout não mostre dados antigos
+  revalidatePath("/", "layout");
+
+  // 3. Redireciona para o login
   redirect("/login");
 }
