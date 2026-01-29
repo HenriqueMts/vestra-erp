@@ -24,12 +24,20 @@ export async function createMember(formData: FormData) {
   }
 
   const supabaseAdmin = createAdminClient();
-  const origin = (await headers()).get("origin");
+
+  // MUDANÇA: Lógica robusta para definir a URL
+  // 1. Tenta a variável da Vercel (Definitiva)
+  // 2. Tenta o header origin (Fallback)
+  // 3. Tenta localhost (Desenvolvimento local)
+  const originHeader = (await headers()).get("origin");
+  const baseUrl =
+    process.env.NEXT_PUBLIC_APP_URL || originHeader || "http://localhost:3000";
 
   const { data: authData, error: authError } =
     await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
       data: { name },
-      redirectTo: `${origin}/auth/callback?next=/dashboard`,
+      // Agora o link sempre será correto: https://vestra-erp.vercel.app/...
+      redirectTo: `${baseUrl}/auth/callback?next=/dashboard`,
     });
 
   if (authError) {
@@ -59,7 +67,7 @@ export async function createMember(formData: FormData) {
     return { success: true };
   } catch (dbError) {
     console.error("Erro no banco:", dbError);
-
+    // Se falhar no banco, removemos o convite para não ficar usuário fantasma
     await supabaseAdmin.auth.admin.deleteUser(newUserId);
     return { error: "Erro ao salvar dados do membro." };
   }
@@ -103,8 +111,7 @@ export async function deleteMember(targetUserId: string) {
         ),
       );
 
-    // Deleta o perfil também (opcional, dependendo da sua regra de negócio)
-    //await db.delete(profiles).where(eq(profiles.id, targetUserId));
+    await db.delete(profiles).where(eq(profiles.id, targetUserId));
 
     const { error: authError } =
       await supabaseAdmin.auth.admin.deleteUser(targetUserId);

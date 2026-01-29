@@ -21,8 +21,8 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   title: {
-    template: "%s | Axis ERP",
-    default: "Axis ERP - Sistema de Gestão",
+    template: "%s | Vestra ERP",
+    default: "Vestra - Sistema de Gestão",
   },
   description: "Plataforma completa para gestão de varejo e atacado.",
   icons: {
