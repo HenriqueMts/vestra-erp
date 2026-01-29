@@ -15,7 +15,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { LockKeyhole, Loader2, Hexagon } from "lucide-react";
+import { Loader2, Hexagon } from "lucide-react";
 
 export default function LoginPage() {
   const [isPending, setIsPending] = useState(false);
@@ -61,7 +61,7 @@ export default function LoginPage() {
             <Hexagon className="w-10 h-10 sm:w-12 sm:h-12 text-white" />
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
-            ERP System
+            Vestra ERP
           </h1>
           <p className="text-xs sm:text-sm font-medium text-slate-500 uppercase tracking-widest">
             Acesso Restrito
