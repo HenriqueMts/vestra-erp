@@ -20,10 +20,13 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "Jilem Modas CRM",
-  description: "CRM para gestão de clientes da Jilem Modas",
+  title: {
+    template: "%s | Axis ERP",
+    default: "Axis ERP - Sistema de Gestão",
+  },
+  description: "Plataforma completa para gestão de varejo e atacado.",
   icons: {
-    icon: "/jilem-logo.svg",
+    icon: "/favicon.ico",
   },
 };
 
@@ -35,7 +38,7 @@ export default function RootLayout({
   return (
     <html className="w-full" lang="pt-BR">
       <head>
-        <link rel="icon" href="/jilem-logo.svg" type="image/svg+xml" />
+        <link rel="icon" href="/favicon.ico" sizes="any" />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased w-full overflow-x-hidden`}

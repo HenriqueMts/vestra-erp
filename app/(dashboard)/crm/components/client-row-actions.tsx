@@ -36,7 +36,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { ClientForm } from "./client-form";
-import { deleteClientAction } from "../actions";
+
+import { deleteClient } from "@/actions/clients";
 
 interface ClientRowActionsProps {
   id: string;
@@ -67,15 +68,19 @@ export function ClientRowActions({
     if (!phone) return toast.error("Sem telefone cadastrado.");
     const cleanPhone = phone.replace(/\D/g, "");
     if (cleanPhone.length < 10) return toast.error("Número inválido.");
-    const finalPhone = cleanPhone.startsWith("55")
-      ? cleanPhone
-      : `55${cleanPhone}`;
+
+    const finalPhone =
+      cleanPhone.startsWith("55") && cleanPhone.length > 11
+        ? cleanPhone
+        : `55${cleanPhone}`;
+
     const message = encodeURIComponent(`Olá ${name}, tudo bem?`);
     window.open(`https://wa.me/${finalPhone}?text=${message}`, "_blank");
   };
 
   const handleDelete = async () => {
-    const result = await deleteClientAction(id);
+    const result = await deleteClient(id);
+
     if (result.success) {
       toast.success(result.message);
       setIsDeleteOpen(false);
@@ -143,6 +148,7 @@ export function ClientRowActions({
               Faça as alterações necessárias nos dados de {name}.
             </DialogDescription>
           </DialogHeader>
+
           <ClientForm
             initialData={{ id, name, email, phone, document, type }}
             onSuccess={() => setIsEditOpen(false)}
@@ -169,7 +175,7 @@ export function ClientRowActions({
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
-              className=" ml-2  bg-red-600 hover:bg-red-700 text-white text-xs sm:text-sm"
+              className="ml-2 bg-red-600 hover:bg-red-700 text-white text-xs sm:text-sm"
             >
               Sim, excluir cliente
             </AlertDialogAction>

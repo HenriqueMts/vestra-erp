@@ -3,7 +3,8 @@ import { Button } from "@/components/ui/button";
 import { db } from "@/db";
 import { clients } from "@/db/schema";
 import { eq, desc, and, or, ilike, sql } from "drizzle-orm";
-import { createClient } from "@/utils/supabase/server";
+
+import { getUserSession } from "@/lib/get-user-session";
 import {
   Table,
   TableBody,
@@ -20,6 +21,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+
 import { ClientForm } from "./components/client-form";
 import {
   normalizeCnpj,
@@ -43,15 +45,10 @@ export default async function ClientesPage({
   const currentPage = Number(queryParams?.page) || 1;
   const offset = (currentPage - 1) * ITEMS_PER_PAGE;
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) return null;
+  const { organizationId } = await getUserSession();
 
   const whereConditions = and(
-    eq(clients.userId, user.id),
+    eq(clients.organizationId, organizationId),
     query
       ? or(
           ilike(clients.name, `%${query}%`),
@@ -80,14 +77,14 @@ export default async function ClientesPage({
   const isFilteredEmpty = query.length > 0 && totalItems === 0;
 
   return (
-    <div className="w-full space-y-6 min-h-[80vh] flex flex-col">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
-        <div className="space-y-1 w-full sm:w-auto">
-          <p className="text-xs text-slate-400 font-medium flex items-center gap-2 overflow-x-auto whitespace-nowrap">
+    <div className="w-full min-h-screen space-y-6 sm:space-y-8 p-4 sm:p-6 lg:p-8 flex flex-col">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-6">
+        <div className="space-y-2 w-full sm:w-auto">
+          <p className="text-xs sm:text-sm text-slate-500 font-medium flex items-center gap-2 overflow-x-auto whitespace-nowrap">
             Menu Principal <span className="text-slate-300">/</span>{" "}
-            <span className="text-slate-900">Clientes</span>
+            <span className="text-slate-900 font-semibold">Clientes</span>
           </p>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-slate-900">
             Clientes
           </h1>
         </div>
@@ -99,8 +96,8 @@ export default async function ClientesPage({
       </div>
 
       {!hasClients && !query ? (
-        <div className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-2xl sm:rounded-3xl bg-white/50 space-y-4 p-6 sm:p-12">
-          <div className="bg-slate-100 p-3 sm:p-4 rounded-full text-slate-400">
+        <div className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-xl sm:rounded-2xl bg-white/50 space-y-4 p-6 sm:p-12">
+          <div className="bg-slate-100 p-4 sm:p-6 rounded-2xl text-slate-400">
             <Users size={40} className="sm:w-12 sm:h-12" />
           </div>
           <div className="text-center space-y-1">

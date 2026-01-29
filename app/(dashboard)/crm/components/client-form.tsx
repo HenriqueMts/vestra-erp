@@ -12,7 +12,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { createClientAction, updateClientAction } from "../actions";
+
+import { createClient, updateClient } from "@/actions/clients";
 import {
   normalizeCnpj,
   normalizeCpf,
@@ -54,14 +55,16 @@ export function ClientForm({
 
     if (initialData) {
       formData.append("id", initialData.id);
-      result = await updateClientAction(formData);
+      result = await updateClient({}, formData);
     } else {
-      result = await createClientAction(formData);
+      result = await createClient({}, formData);
     }
 
     setIsPending(false);
 
-    if (result.success) {
+    const isSuccess = result.success || result.message?.includes("sucesso");
+
+    if (isSuccess) {
       toast.success(result.message);
       if (onSuccess) onSuccess();
     } else {
@@ -93,7 +96,7 @@ export function ClientForm({
           required
           placeholder="João Silva ou Empresa LTDA"
           defaultValue={initialData?.name}
-          className="text-base"
+          className="text-sm sm:text-base"
         />
       </div>
 
@@ -109,7 +112,7 @@ export function ClientForm({
             if (val !== initialData?.type) setDocument("");
           }}
         >
-          <SelectTrigger className="text-base">
+          <SelectTrigger className="text-sm sm:text-base">
             <SelectValue placeholder="Selecione o tipo" />
           </SelectTrigger>
           <SelectContent>
@@ -134,7 +137,7 @@ export function ClientForm({
             value={document}
             onChange={handleDocumentChange}
             maxLength={type === "PF" ? 14 : 18}
-            className="text-base"
+            className="text-sm sm:text-base"
           />
         </div>
         <div className="grid gap-2">
@@ -148,7 +151,7 @@ export function ClientForm({
             value={phone}
             onChange={handlePhoneChange}
             maxLength={15}
-            className="text-base"
+            className="text-sm sm:text-base"
           />
         </div>
       </div>
@@ -163,14 +166,14 @@ export function ClientForm({
           type="email"
           placeholder="cliente@email.com"
           defaultValue={initialData?.email || ""}
-          className="text-base"
+          className="text-sm sm:text-base"
         />
       </div>
 
       <div className="pt-4">
         <Button
           type="submit"
-          className="w-full bg-slate-900 text-white py-5 sm:py-6 text-sm sm:text-base"
+          className="w-full bg-slate-900 text-white hover:bg-black py-4 sm:py-5 text-sm sm:text-base font-medium"
           disabled={isPending}
         >
           {isPending

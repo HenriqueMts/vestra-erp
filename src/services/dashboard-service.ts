@@ -8,7 +8,7 @@ export async function getDashboardMetrics(userId: string) {
   const [totalResult] = await db
     .select({ count: sql<number>`count(*)` })
     .from(clients)
-    .where(eq(clients.userId, userId)); // <--- Filtro Crucial
+    .where(eq(clients.createdBy, userId)); // <--- Filtro Crucial
 
   const totalClients = Number(totalResult.count);
 
@@ -22,7 +22,7 @@ export async function getDashboardMetrics(userId: string) {
     .where(
       and(
         gte(clients.createdAt, thirtyDaysAgo),
-        eq(clients.userId, userId), // <--- Filtro Crucial
+        eq(clients.createdBy, userId), // <--- Filtro Crucial
       ),
     );
 
@@ -30,7 +30,7 @@ export async function getDashboardMetrics(userId: string) {
 
   // 3. Últimos 5 Clientes (DO USUÁRIO)
   const recentClients = await db.query.clients.findMany({
-    where: eq(clients.userId, userId), // <--- Filtro Crucial
+    where: eq(clients.createdBy, userId), // <--- Filtro Crucial
     orderBy: [desc(clients.createdAt)],
     limit: 5,
   });
@@ -43,7 +43,7 @@ export async function getDashboardMetrics(userId: string) {
   const allClientsForGraph = await db.query.clients.findMany({
     where: and(
       gte(clients.createdAt, sixMonthsAgo),
-      eq(clients.userId, userId), // <--- Filtro Crucial
+      eq(clients.createdBy, userId), // <--- Filtro Crucial
     ),
     columns: {
       createdAt: true,
