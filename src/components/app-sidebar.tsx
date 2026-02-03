@@ -12,6 +12,7 @@ import {
   X,
   Settings,
   Users2,
+  Package,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -96,6 +97,26 @@ export function AppSidebar({ user, logo }: Readonly<AppSidebarProps>) {
                 }
               />
               <span>Dashboard</span>
+            </Link>
+
+            <Link
+              href="/inventory/products"
+              onClick={closeMenu}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium text-sm transition-all ${
+                isActive("/inventory/products")
+                  ? "bg-slate-900 text-white shadow-md shadow-slate-900/20"
+                  : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+              }`}
+            >
+              <Package
+                size={18}
+                className={
+                  isActive("/inventory/products")
+                    ? "text-slate-200"
+                    : "text-slate-400"
+                }
+              />
+              <span>Produtos</span>
             </Link>
 
             <Link

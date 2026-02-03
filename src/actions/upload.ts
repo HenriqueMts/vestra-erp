@@ -69,3 +69,40 @@ export async function uploadLogo(formData: FormData) {
     return { error: "Imagem enviada, mas falha ao salvar no banco." };
   }
 }
+
+export async function uploadProductImage(formData: FormData) {
+  const { organizationId, user } = await getUserSession();
+
+  if (!user || !organizationId) {
+    return { error: "Usuário não autenticado." };
+  }
+
+  const file = formData.get("file") as File;
+
+  if (!file) {
+    return { error: "Nenhum arquivo enviado." };
+  }
+
+  if (file.size > 5 * 1024 * 1024) {
+    return { error: "A imagem deve ter no máximo 5MB." };
+  }
+
+  const supabase = await createClient();
+  const fileExt = file.name.split(".").pop();
+  const fileName = `${organizationId}/${Date.now()}.${fileExt}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from("products")
+    .upload(fileName, file, { upsert: true });
+
+  if (uploadError) {
+    console.error("Erro upload:", uploadError);
+    return { error: "Falha ao enviar imagem." };
+  }
+
+  const {
+    data: { publicUrl },
+  } = supabase.storage.from("products").getPublicUrl(fileName);
+
+  return { success: true, url: publicUrl };
+}

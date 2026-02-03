@@ -77,7 +77,7 @@ export default function UpdatePasswordPage() {
                 type="password"
                 required
                 placeholder="******"
-                minLength={6}
+                minLength={4}
                 className="text-sm sm:text-base"
               />
             </div>
@@ -87,7 +87,7 @@ export default function UpdatePasswordPage() {
             <Button
               type="submit"
               disabled={isPending}
-              className="w-full bg-slate-900 hover:bg-black text-white py-4 sm:py-5 text-sm sm:text-base font-medium"
+              className="w-full mt-2 bg-slate-900 hover:bg-black text-white py-4 sm:py-5 text-sm sm:text-base font-medium"
             >
               {isPending ? (
                 <Loader2 className="animate-spin mr-2" />
