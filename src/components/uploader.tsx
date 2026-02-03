@@ -26,39 +26,25 @@ export function LogoUploader({
     if (!e.target.files || e.target.files.length === 0) return;
 
     const file = e.target.files[0];
-
-    // Validação básica
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error("Erro", { description: "O logo deve ter no máximo 2MB." });
-      return;
-    }
-
     setIsUploading(true);
 
-    // Preview local imediato
     const objectUrl = URL.createObjectURL(file);
     setPreview(objectUrl);
 
     const formData = new FormData();
     formData.append("file", file);
 
-    try {
-      const result = await uploadLogo(formData);
+    const result = await uploadLogo(formData);
 
-      if (result.error) {
-        toast.error("Erro ao atualizar logo", { description: result.error });
-        setPreview(initialUrl); // Reverte se der erro
-      } else {
-        toast.success("Logo atualizado com sucesso!");
-        router.refresh(); // Atualiza a página para refletir no header
-      }
-    } catch (error) {
-      console.error(error);
-      toast.error("Erro inesperado ao enviar logo.");
+    if (result.error) {
+      toast.error("Erro ao atualizar logo", { description: result.error });
       setPreview(initialUrl);
-    } finally {
-      setIsUploading(false);
+    } else {
+      toast.success("Logo atualizado com sucesso!");
+      router.refresh();
     }
+
+    setIsUploading(false);
   };
 
   return (
@@ -67,7 +53,7 @@ export function LogoUploader({
         <Avatar className="h-20 w-20 sm:h-24 sm:w-24 border-2 border-slate-100 shadow-md">
           <AvatarImage src={preview || ""} className="object-cover" />
           <AvatarFallback className="text-xl sm:text-2xl font-bold bg-slate-50 text-slate-400">
-            {orgName?.substring(0, 2).toUpperCase() || "OR"}
+            {orgName.substring(0, 2).toUpperCase()}
           </AvatarFallback>
         </Avatar>
 
@@ -82,7 +68,7 @@ export function LogoUploader({
         <h3 className="font-semibold text-sm sm:text-base text-slate-900">
           Logo da Empresa
         </h3>
-        <p className="text-xs sm:text-sm text-slate-600 max-w-sm">
+        <p className="text-xs sm:text-sm text-slate-600">
           Recomendado: JPG ou PNG, pelo menos 400x400px. Máximo 2MB.
         </p>
 

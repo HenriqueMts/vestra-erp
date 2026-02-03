@@ -6,6 +6,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+// CORREÇÃO: Importando do caminho certo
 import { LogoUploader } from "@/components/logo-uploader";
 import { redirect } from "next/navigation";
 
@@ -14,6 +15,8 @@ export default async function SettingsPage() {
 
   if (!session) redirect("/login");
 
+  // Assumindo que seu session traz role, orgLogo e orgName.
+  // Se 'role' não estiver no session, você precisará buscar no banco 'members'.
   const isOwner = session.role === "owner";
 
   return (
@@ -41,12 +44,13 @@ export default async function SettingsPage() {
             {isOwner ? (
               <LogoUploader
                 initialUrl={session.orgLogo}
-                orgName={session.orgName}
+                orgName={session.orgName || "Sua Empresa"}
               />
             ) : (
-              <p className="text-xs sm:text-sm text-red-600 bg-red-50 p-3 sm:p-4 rounded-lg border border-red-100">
+              <div className="text-xs sm:text-sm text-amber-700 bg-amber-50 p-3 sm:p-4 rounded-lg border border-amber-100 flex items-center gap-2">
+                <span>🔒</span>
                 Apenas o dono da empresa pode alterar o logotipo.
-              </p>
+              </div>
             )}
           </CardContent>
         </Card>
