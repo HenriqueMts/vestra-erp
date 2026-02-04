@@ -1,129 +1,170 @@
 "use server";
 
-import { eq, and } from "drizzle-orm";
-import { createAdminClient } from "@/utils/supabase/admin";
 import { db } from "@/db";
-import { members, profiles } from "@/db/schema";
-import { getUserSession } from "@/lib/get-user-session";
+import { members, stores, profiles } from "@/db/schema"; // <--- ADICIONE PROFILES AQUI
+import { eq, and } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
-import { headers } from "next/headers";
+import { getUserSession } from "@/lib/get-user-session";
+import { z } from "zod";
+import { createClient } from "@supabase/supabase-js";
 
-export async function createMember(formData: FormData) {
-  const session = await getUserSession();
+// --- VALIDATION SCHEMA ---
+const inviteSchema = z.object({
+  name: z.string().min(2),
+  email: z.string().email(),
+  role: z.enum(["manager", "seller"]),
+  defaultStoreId: z.string().optional(),
+});
 
-  if (session.role !== "owner" && session.role !== "manager") {
-    return { error: "Permissão negada." };
+type InviteInput = z.infer<typeof inviteSchema>;
+
+type ActionResponse = {
+  success?: boolean;
+  message?: string;
+  error?: string;
+};
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  if (typeof error === "string") return error;
+  return "Ocorreu um erro desconhecido.";
+}
+
+// Cliente Admin do Supabase
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  },
+);
+
+// --- CONVIDAR MEMBRO ---
+export async function inviteMember(data: InviteInput): Promise<ActionResponse> {
+  const { user, organizationId } = await getUserSession();
+
+  if (!user || !organizationId) {
+    return { error: "Sessão inválida ou não autorizado." };
   }
-
-  const name = formData.get("name") as string;
-  const email = formData.get("email") as string;
-  const role = formData.get("role") as "manager" | "seller";
-
-  if (!name || !email) {
-    return { error: "Preencha nome e e-mail." };
-  }
-
-  const supabaseAdmin = createAdminClient();
-
-  // MUDANÇA: Lógica robusta para definir a URL
-  // 1. Tenta a variável da Vercel (Definitiva)
-  // 2. Tenta o header origin (Fallback)
-  // 3. Tenta localhost (Desenvolvimento local)
-  const originHeader = (await headers()).get("origin");
-  const baseUrl =
-    process.env.NEXT_PUBLIC_APP_URL || originHeader || "http://localhost:3000";
-
-  const { data: authData, error: authError } =
-    await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
-      data: { name },
-      // Agora o link sempre será correto: https://vestra-erp.vercel.app/...
-      redirectTo: `${baseUrl}/auth/callback?next=/dashboard`,
-    });
-
-  if (authError) {
-    console.error("Erro ao convidar:", authError);
-    return {
-      error: "Erro ao enviar convite. Verifique se o e-mail já existe.",
-    };
-  }
-
-  const newUserId = authData.user.id;
 
   try {
-    await db.insert(profiles).values({
-      id: newUserId,
-      name,
-      email,
-      mustChangePassword: true,
+    // 1. Verifica duplicidade
+    const existing = await db.query.members.findFirst({
+      where: and(
+        eq(members.organizationId, organizationId),
+        eq(members.email, data.email),
+      ),
     });
 
+    if (existing) {
+      return { error: "Este e-mail já está cadastrado na equipe." };
+    }
+
+    // 2. Cria o usuário no Auth do Supabase e envia o e-mail
+    const { data: inviteData, error: inviteError } =
+      await supabaseAdmin.auth.admin.inviteUserByEmail(data.email, {
+        data: { name: data.name },
+        redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/login`,
+      });
+
+    if (inviteError) {
+      console.error("Erro Supabase Admin:", inviteError);
+      return { error: `Erro ao enviar convite: ${inviteError.message}` };
+    }
+
+    if (!inviteData.user) {
+      return { error: "Erro inesperado: Usuário não foi criado." };
+    }
+
+    // --- CORREÇÃO DO ERRO 23503 ---
+    // 3. Garante que o Perfil existe na tabela public.profiles
+    // Como o trigger pode não estar rodando, inserimos manualmente para evitar o erro de chave estrangeira.
+    await db
+      .insert(profiles)
+      .values({
+        id: inviteData.user.id, // O mesmo ID gerado pelo Auth
+        name: data.name,
+        email: data.email,
+      })
+      .onConflictDoNothing(); // Se o trigger funcionou e já criou, não faz nada.
+
+    // 4. Agora sim, salva o membro vinculado
     await db.insert(members).values({
-      organizationId: session.organizationId,
-      userId: newUserId,
-      role: role || "seller",
+      organizationId,
+      email: data.email,
+      userId: inviteData.user.id,
+      role: data.role,
+      defaultStoreId: data.defaultStoreId || null,
     });
 
     revalidatePath("/team");
-    return { success: true };
-  } catch (dbError) {
-    console.error("Erro no banco:", dbError);
-    // Se falhar no banco, removemos o convite para não ficar usuário fantasma
-    await supabaseAdmin.auth.admin.deleteUser(newUserId);
-    return { error: "Erro ao salvar dados do membro." };
+    return { success: true, message: "Convite enviado e membro adicionado!" };
+  } catch (error) {
+    console.error("Server Action Error (inviteMember):", error);
+    return { error: getErrorMessage(error) };
   }
 }
 
-export async function deleteMember(targetUserId: string) {
-  const session = await getUserSession();
+// --- REMOVER MEMBRO ---
+export async function deleteMember(memberId: string): Promise<ActionResponse> {
+  const { user, organizationId } = await getUserSession();
 
-  if (session.role !== "owner" && session.role !== "manager") {
-    return { error: "Permissão negada." };
-  }
-
-  if (targetUserId === session.user.id) {
-    return { error: "Você não pode remover a si mesmo." };
-  }
-
-  const targetMember = await db.query.members.findFirst({
-    where: and(
-      eq(members.userId, targetUserId),
-      eq(members.organizationId, session.organizationId),
-    ),
-  });
-
-  if (!targetMember) {
-    return { error: "Membro não encontrado." };
-  }
-
-  if (targetMember.role === "owner") {
-    return { error: "Não é possível remover o dono da empresa." };
-  }
-
-  const supabaseAdmin = createAdminClient();
+  if (!user || !organizationId) return { error: "Não autorizado." };
 
   try {
-    await db
-      .delete(members)
+    const [memberToDelete] = await db
+      .select()
+      .from(members)
       .where(
         and(
-          eq(members.userId, targetUserId),
-          eq(members.organizationId, session.organizationId),
+          eq(members.id, memberId),
+          eq(members.organizationId, organizationId),
         ),
-      );
+      )
+      .limit(1);
 
-    await db.delete(profiles).where(eq(profiles.id, targetUserId));
-
-    const { error: authError } =
-      await supabaseAdmin.auth.admin.deleteUser(targetUserId);
-
-    if (authError) {
-      console.error("Erro ao deletar do Auth:", authError);
+    if (!memberToDelete) {
+      return { error: "Membro não encontrado." };
     }
 
+    // Opcional: Remover o usuário do Auth também para limpar o banco
+    if (memberToDelete.userId) {
+      await supabaseAdmin.auth.admin.deleteUser(memberToDelete.userId);
+      // Isso vai disparar um cascade delete se o banco estiver configurado,
+      // ou podemos deletar manualmente o member abaixo.
+    }
+
+    await db.delete(members).where(eq(members.id, memberId));
+
     revalidatePath("/team");
-    return { success: true };
+    return { success: true, message: "Membro removido com sucesso." };
   } catch (error) {
-    console.error("Erro ao remover membro:", error);
-    return { error: "Erro ao remover membro do sistema." };
+    console.error("Erro delete:", error);
+    const msg = getErrorMessage(error);
+    if (msg.includes("violates foreign key")) {
+      return {
+        error: "Membro possui vendas vinculadas e não pode ser removido.",
+      };
+    }
+    return { error: `Erro ao remover: ${msg}` };
+  }
+}
+
+// --- LISTAR LOJAS ---
+export async function getStoreOptions() {
+  const { organizationId } = await getUserSession();
+  if (!organizationId) return [];
+
+  try {
+    const result = await db.query.stores.findMany({
+      where: eq(stores.organizationId, organizationId),
+      columns: { id: true, name: true },
+    });
+    return result;
+  } catch (error) {
+    return [];
   }
 }

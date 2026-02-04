@@ -37,7 +37,7 @@ export const organizations = pgTable("organizations", {
   slug: text("slug").unique().notNull(),
   document: text("document"),
   logoUrl: text("logo_url"),
-  plan: text("plan").default("pro"),
+  plan: text("plan").default("enterprise"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -56,10 +56,17 @@ export const members = pgTable("members", {
   organizationId: uuid("organization_id")
     .notNull()
     .references(() => organizations.id, { onDelete: "cascade" }),
-  userId: uuid("user_id")
-    .notNull()
-    .references(() => profiles.id, { onDelete: "cascade" }),
-  storeId: uuid("store_id").references(() => stores.id),
+
+  userId: uuid("user_id").references(() => profiles.id, {
+    onDelete: "cascade",
+  }),
+
+  email: text("email").notNull(),
+
+  defaultStoreId: uuid("default_store_id").references(() => stores.id, {
+    onDelete: "set null",
+  }),
+
   role: roleEnum("role").default("seller").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -223,7 +230,7 @@ export const clients = pgTable(
 );
 
 // ----------------------------------------------------------------------
-// 5. RELATIONS
+//  RELATIONS
 // ----------------------------------------------------------------------
 
 export const organizationRelations = relations(organizations, ({ many }) => ({
@@ -309,13 +316,15 @@ export const membersRelations = relations(members, ({ one }) => ({
     fields: [members.organizationId],
     references: [organizations.id],
   }),
-  store: one(stores, {
-    fields: [members.storeId],
-    references: [stores.id],
-  }),
+
   user: one(profiles, {
     fields: [members.userId],
     references: [profiles.id],
+  }),
+
+  store: one(stores, {
+    fields: [members.defaultStoreId],
+    references: [stores.id],
   }),
 }));
 
