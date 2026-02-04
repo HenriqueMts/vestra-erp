@@ -42,7 +42,6 @@ const supabaseAdmin = createClient(
   },
 );
 
-// --- CONVIDAR MEMBRO ---
 export async function inviteMember(data: InviteInput): Promise<ActionResponse> {
   const { user, organizationId } = await getUserSession();
 
@@ -51,7 +50,6 @@ export async function inviteMember(data: InviteInput): Promise<ActionResponse> {
   }
 
   try {
-    // 1. Verifica duplicidade
     const existing = await db.query.members.findFirst({
       where: and(
         eq(members.organizationId, organizationId),
@@ -63,11 +61,10 @@ export async function inviteMember(data: InviteInput): Promise<ActionResponse> {
       return { error: "Este e-mail já está cadastrado na equipe." };
     }
 
-    // 2. Cria o usuário no Auth do Supabase e envia o e-mail
     const { data: inviteData, error: inviteError } =
       await supabaseAdmin.auth.admin.inviteUserByEmail(data.email, {
         data: { name: data.name },
-        redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/login`,
+        redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback?next=/update-password`,
       });
 
     if (inviteError) {
@@ -79,19 +76,15 @@ export async function inviteMember(data: InviteInput): Promise<ActionResponse> {
       return { error: "Erro inesperado: Usuário não foi criado." };
     }
 
-    // --- CORREÇÃO DO ERRO 23503 ---
-    // 3. Garante que o Perfil existe na tabela public.profiles
-    // Como o trigger pode não estar rodando, inserimos manualmente para evitar o erro de chave estrangeira.
     await db
       .insert(profiles)
       .values({
-        id: inviteData.user.id, // O mesmo ID gerado pelo Auth
+        id: inviteData.user.id,
         name: data.name,
         email: data.email,
       })
-      .onConflictDoNothing(); // Se o trigger funcionou e já criou, não faz nada.
+      .onConflictDoNothing();
 
-    // 4. Agora sim, salva o membro vinculado
     await db.insert(members).values({
       organizationId,
       email: data.email,
@@ -130,11 +123,8 @@ export async function deleteMember(memberId: string): Promise<ActionResponse> {
       return { error: "Membro não encontrado." };
     }
 
-    // Opcional: Remover o usuário do Auth também para limpar o banco
     if (memberToDelete.userId) {
       await supabaseAdmin.auth.admin.deleteUser(memberToDelete.userId);
-      // Isso vai disparar um cascade delete se o banco estiver configurado,
-      // ou podemos deletar manualmente o member abaixo.
     }
 
     await db.delete(members).where(eq(members.id, memberId));
@@ -153,7 +143,6 @@ export async function deleteMember(memberId: string): Promise<ActionResponse> {
   }
 }
 
-// --- LISTAR LOJAS ---
 export async function getStoreOptions() {
   const { organizationId } = await getUserSession();
   if (!organizationId) return [];
