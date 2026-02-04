@@ -67,7 +67,9 @@ export async function inviteMember(data: InviteInput): Promise<ActionResponse> {
     const { data: inviteData, error: inviteError } =
       await supabaseAdmin.auth.admin.inviteUserByEmail(data.email, {
         data: { name: data.name },
-        redirectTo: `${baseUrl}/auth/callback?next=/update-password`,
+        // Invite não suporta PKCE; tokens vêm no hash. Redirecionar para /login
+// para o cliente processar o hash e enviar para /update-password quando type=invite.
+redirectTo: `${baseUrl}/login`,
       });
 
     if (inviteError) {

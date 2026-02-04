@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { login } from "@/actions/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,10 +16,60 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Loader2, Hexagon } from "lucide-react";
+import { createClient } from "@/utils/supabase/client";
+
+function parseHashParams(hash: string): Record<string, string> {
+  if (!hash.startsWith("#")) return {};
+  const params: Record<string, string> = {};
+  const query = hash.slice(1);
+  for (const part of query.split("&")) {
+    const [key, value] = part.split("=").map(decodeURIComponent);
+    if (key && value) params[key] = value;
+  }
+  return params;
+}
 
 export default function LoginPage() {
   const [isPending, setIsPending] = useState(false);
+  const [handlingAuth, setHandlingAuth] = useState(true);
   const router = useRouter();
+
+  // Magic link / invite: Supabase envia tokens no hash (invite não suporta PKCE).
+  // O callback em /auth/callback só recebe ?code=; o hash nunca chega no servidor.
+  useEffect(() => {
+    if (typeof globalThis.window === "undefined") return;
+    const hash = globalThis.window.location.hash;
+    const params = parseHashParams(hash);
+    const accessToken = params.access_token;
+    const refreshToken = params.refresh_token;
+    const type = params.type;
+
+    if (!accessToken || !refreshToken) {
+      setHandlingAuth(false);
+      return;
+    }
+
+    const supabase = createClient();
+    supabase.auth
+      .setSession({ access_token: accessToken, refresh_token: refreshToken })
+      .then(() => {
+        const url = new URL(globalThis.window.location.href);
+        url.hash = "";
+        url.searchParams.delete("error");
+        globalThis.window.history.replaceState({}, "", url.pathname + url.search);
+        if (type === "invite") {
+          router.replace("/update-password");
+        } else {
+          router.replace("/dashboard");
+        }
+      })
+      .catch(() => {
+        setHandlingAuth(false);
+        toast.error("Falha ao confirmar acesso", {
+          description: "O link pode ter expirado. Tente novamente.",
+        });
+      });
+  }, [router]);
 
   const handleLogin = async (formData: FormData) => {
     setIsPending(true);
@@ -52,6 +102,17 @@ export default function LoginPage() {
       setIsPending(false);
     }
   };
+
+  if (handlingAuth) {
+    return (
+      <div className="flex min-h-screen w-full items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 px-4 py-8 sm:py-0">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-10 h-10 animate-spin text-slate-600" />
+          <p className="text-sm text-slate-600">Confirmando acesso...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen w-full items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 px-4 py-8 sm:py-0">
