@@ -37,10 +37,10 @@ export async function getUserSession() {
     organizationId: member.organizationId,
     orgLogo: member.organization.logoUrl,
     orgName: member.organization.name,
-    storeId: member.storeId,
+    storeId: member.defaultStoreId,
     role: member.role,
     orgSlug: member.organization.slug,
-    // Retornamos a flag para o Layout decidir se bloqueia ou não
+
     mustChangePassword: profile?.mustChangePassword || false,
   };
 }

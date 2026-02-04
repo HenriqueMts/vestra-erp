@@ -17,13 +17,14 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
+// CORREÇÃO 1: Renomear prop para memberId (para bater com a página e com a action)
 interface DeleteMemberButtonProps {
-  userId: string;
+  memberId: string;
   disabled?: boolean;
 }
 
 export function DeleteMemberButton({
-  userId,
+  memberId, // <--- Recebendo o nome correto
   disabled,
 }: Readonly<DeleteMemberButtonProps>) {
   const [isPending, setIsPending] = useState(false);
@@ -31,15 +32,19 @@ export function DeleteMemberButton({
 
   async function handleDelete() {
     setIsPending(true);
-    const result = await deleteMember(userId);
+
+    // Chamamos a server action passando o ID correto
+    const result = await deleteMember(memberId);
 
     if (result.error) {
+      // Agora o erro será a mensagem amigável que tratamos no catch da Action
       toast.error(result.error);
-      setIsPending(false);
     } else {
       toast.success("Membro removido com sucesso.");
       setOpen(false);
     }
+
+    setIsPending(false);
   }
 
   return (
