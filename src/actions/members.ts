@@ -7,6 +7,7 @@ import { revalidatePath } from "next/cache";
 import { getUserSession } from "@/lib/get-user-session";
 import { z } from "zod";
 import { createClient } from "@supabase/supabase-js";
+import { headers } from "next/headers";
 
 // --- VALIDATION SCHEMA ---
 const inviteSchema = z.object({
@@ -30,7 +31,6 @@ function getErrorMessage(error: unknown): string {
   return "Ocorreu um erro desconhecido.";
 }
 
-// Cliente Admin do Supabase
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -49,6 +49,9 @@ export async function inviteMember(data: InviteInput): Promise<ActionResponse> {
     return { error: "Sessão inválida ou não autorizado." };
   }
 
+  const originHeader = (await headers()).get("origin");
+  const baseUrl =
+    process.env.NEXT_PUBLIC_APP_URL || originHeader || "http://localhost:3000";
   try {
     const existing = await db.query.members.findFirst({
       where: and(
@@ -64,7 +67,7 @@ export async function inviteMember(data: InviteInput): Promise<ActionResponse> {
     const { data: inviteData, error: inviteError } =
       await supabaseAdmin.auth.admin.inviteUserByEmail(data.email, {
         data: { name: data.name },
-        redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback?next=/update-password`,
+        redirectTo: `${baseUrl}/auth/callback?next=/update-password`,
       });
 
     if (inviteError) {
