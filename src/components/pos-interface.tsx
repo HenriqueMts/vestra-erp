@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import {
   Search,
@@ -38,7 +38,7 @@ type Product = {
   sku: string | null;
   description: string | null;
   totalStock: number;
-  category: { name: string } | null;
+  category: { id: string; name: string } | null;
   variants: Variant[];
 };
 
@@ -92,13 +92,29 @@ export function POSInterface({
 
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(
+    null,
+  );
+
+  const categories = useMemo(() => {
+    const seen = new Map<string, string>();
+    products.forEach((p) => {
+      if (p.category?.id && p.category.name) {
+        seen.set(p.category.id, p.category.name);
+      }
+    });
+    return Array.from(seen.entries()).map(([id, name]) => ({ id, name }));
+  }, [products]);
 
   // --- LÓGICA DE FILTRO ---
-  const filteredProducts = products.filter(
-    (p) =>
+  const filteredProducts = products.filter((p) => {
+    const matchesSearch =
       p.name.toLowerCase().includes(search.toLowerCase()) ||
-      p.sku?.toLowerCase().includes(search.toLowerCase())
-  );
+      p.sku?.toLowerCase().includes(search.toLowerCase());
+    const matchesCategory =
+      !selectedCategoryId || p.category?.id === selectedCategoryId;
+    return matchesSearch && matchesCategory;
+  });
 
   // --- LÓGICA DO CARRINHO ---
   const addToCart = (product: Product, variant?: Variant) => {
@@ -259,16 +275,56 @@ export function POSInterface({
             </Link>
           </div>
 
-          <div className="w-full sm:flex-1 sm:max-w-lg sm:mx-4 order-3 sm:order-2">
+          <div className="w-full sm:flex-1 sm:max-w-lg sm:mx-4 order-3 sm:order-2 flex flex-col gap-2">
             <div className="relative group">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 h-4 w-4 group-focus-within:text-slate-900" />
               <Input
-                placeholder="O que você está procurando? (Nome, SKU)"
+                placeholder="O que você está procurando? (Nome ou código de barras)"
                 className="pl-10 pr-4 text-sm sm:text-base bg-slate-100 border-transparent focus:bg-white focus:border-slate-300 transition-all rounded-full w-full"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key !== "Enter") return;
+                  if (filteredProducts.length === 1) {
+                    e.preventDefault();
+                    const product = filteredProducts[0];
+                    const variant =
+                      product.variants?.length === 1
+                        ? product.variants[0]
+                        : undefined;
+                    addToCart(product, variant);
+                    setSearch("");
+                  }
+                }}
               />
             </div>
+            {categories.length > 0 && (
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+                <Button
+                  type="button"
+                  variant={selectedCategoryId === null ? "default" : "outline"}
+                  size="sm"
+                  className="shrink-0 rounded-full h-8 text-xs font-medium"
+                  onClick={() => setSelectedCategoryId(null)}
+                >
+                  Todas
+                </Button>
+                {categories.map((cat) => (
+                  <Button
+                    key={cat.id}
+                    type="button"
+                    variant={
+                      selectedCategoryId === cat.id ? "default" : "outline"
+                    }
+                    size="sm"
+                    className="shrink-0 rounded-full h-8 text-xs font-medium whitespace-nowrap"
+                    onClick={() => setSelectedCategoryId(cat.id)}
+                  >
+                    {cat.name}
+                  </Button>
+                ))}
+              </div>
+            )}
           </div>
 
           <Button

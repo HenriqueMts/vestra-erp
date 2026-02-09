@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -17,11 +17,14 @@ import { toast } from "sonner";
 import { findClientByDocument } from "@/actions/clients";
 import {
   completeSale,
+  getSaleForReceipt,
   type PaymentMethod,
+  type SaleReceiptData,
 } from "@/actions/sales";
 import { PosClientRegisterModal, type PosClient } from "./pos-client-register-modal";
 import { normalizeCpf, normalizeCnpj } from "@/utils/mask";
-import { Loader2, UserPlus, UserCheck } from "lucide-react";
+import { Loader2, UserPlus, UserCheck, Printer, X } from "lucide-react";
+import { Receipt } from "./recipt";
 
 export type CartItem = {
   cartId: string;
@@ -67,6 +70,9 @@ export function PosCheckoutModal({
   const [showClientModal, setShowClientModal] = useState(false);
   const [hasInterest, setHasInterest] = useState(false);
   const [interestPercent, setInterestPercent] = useState("");
+  const [receiptData, setReceiptData] = useState<SaleReceiptData | null>(null);
+  const [loadingReceipt, setLoadingReceipt] = useState(false);
+  const receiptRef = useRef<HTMLDivElement>(null);
 
   const normalizedInterest = interestPercent.trim().replaceAll(",", ".");
   const parsedInterestPercent = Number(normalizedInterest);
@@ -156,9 +162,19 @@ export function PosCheckoutModal({
       }
       toast.success(result.message ?? "Venda concluída!");
       onSuccess();
-      onOpenChange(false);
       setClient(null);
       setDocumentValue("");
+
+      if (result.saleId) {
+        setLoadingReceipt(true);
+        const receiptResult = await getSaleForReceipt(result.saleId);
+        setLoadingReceipt(false);
+        if ("data" in receiptResult) {
+          setReceiptData(receiptResult.data);
+        }
+      } else {
+        onOpenChange(false);
+      }
     } catch {
       toast.error("Erro ao processar venda.");
     } finally {
@@ -166,10 +182,65 @@ export function PosCheckoutModal({
     }
   };
 
+  const handleCloseReceipt = () => {
+    setReceiptData(null);
+    onOpenChange(false);
+  };
+
+  const handlePrintReceipt = () => {
+    window.print();
+  };
+
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
+      <Dialog open={open} onOpenChange={(isOpen) => !receiptData && onOpenChange(isOpen)}>
         <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0">
+          {receiptData ? (
+            <>
+              <DialogHeader className="p-4 pb-0">
+                <DialogTitle>Comprovante de venda</DialogTitle>
+              </DialogHeader>
+              <div
+                ref={receiptRef}
+                className="receipt-print-area px-4 pb-4 overflow-auto"
+                data-print="true"
+              >
+                <Receipt
+                  organization={receiptData.organization}
+                  store={receiptData.store}
+                  items={receiptData.items}
+                  total={receiptData.total}
+                  date={receiptData.date}
+                  orderId={receiptData.orderId}
+                />
+              </div>
+              <div className="p-4 border-t bg-slate-50 flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="flex-1 gap-2"
+                  onClick={handlePrintReceipt}
+                >
+                  <Printer className="h-4 w-4" />
+                  Imprimir
+                </Button>
+                <Button
+                  type="button"
+                  className="flex-1 gap-2"
+                  onClick={handleCloseReceipt}
+                >
+                  <X className="h-4 w-4" />
+                  Fechar
+                </Button>
+              </div>
+            </>
+          ) : loadingReceipt ? (
+            <div className="p-8 flex flex-col items-center justify-center gap-3">
+              <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
+              <p className="text-sm text-slate-600">Gerando comprovante...</p>
+            </div>
+          ) : (
+            <>
           <DialogHeader className="p-4 pb-0">
             <DialogTitle>Finalizar compra</DialogTitle>
           </DialogHeader>
@@ -382,6 +453,8 @@ export function PosCheckoutModal({
               )}
             </Button>
           </div>
+            </>
+          )}
         </DialogContent>
       </Dialog>
 

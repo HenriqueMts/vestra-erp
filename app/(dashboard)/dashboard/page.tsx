@@ -5,12 +5,13 @@ import { clients, sales } from "@/db/schema";
 import { eq, desc, and, sql, gte } from "drizzle-orm";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Users, UserPlus, TrendingUp, ArrowLeft } from "lucide-react";
+import { Users, UserPlus, TrendingUp, ArrowLeft, Package, AlertTriangle } from "lucide-react";
 
 import { OverviewChart } from "./components/overview-chart";
 import { RecentClients } from "./components/recent-clients";
 import { RecentSales } from "./components/recent-sales";
 import { CloseCashButton } from "./components/close-cash-button";
+import { getStockOverview } from "@/actions/products";
 
 export default async function DashboardPage() {
   const { organizationId, orgName, role, storeId } = await getUserSession();
@@ -74,6 +75,8 @@ export default async function DashboardPage() {
       style: "currency",
       currency: "BRL",
     }).format(cents / 100);
+
+  const stockOverview = await getStockOverview();
 
   return (
     <div className="w-full min-h-screen space-y-6 sm:space-y-8 p-4 sm:p-6 lg:p-8">
@@ -151,6 +154,70 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      {stockOverview && (
+        <div>
+          <h3 className="text-lg font-semibold text-slate-900 mb-3">
+            Panorama do Estoque
+          </h3>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <Link href="/inventory/products">
+              <Card className="hover:bg-slate-50 transition-colors cursor-pointer h-full">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+                  <CardTitle className="text-xs sm:text-sm font-medium">
+                    Produtos ativos
+                  </CardTitle>
+                  <Package className="h-4 w-4 sm:h-5 sm:w-5 text-slate-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl sm:text-3xl font-bold text-slate-900">
+                    {stockOverview.totalProducts}
+                  </div>
+                  <p className="text-xs sm:text-sm text-slate-600 mt-1">
+                    No catálogo
+                  </p>
+                </CardContent>
+              </Card>
+            </Link>
+            <Link href="/inventory/products">
+              <Card className="hover:bg-slate-50 transition-colors cursor-pointer h-full">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+                  <CardTitle className="text-xs sm:text-sm font-medium">
+                    Unidades em estoque
+                  </CardTitle>
+                  <Package className="h-4 w-4 sm:h-5 sm:w-5 text-slate-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl sm:text-3xl font-bold text-slate-900">
+                    {stockOverview.totalUnits.toLocaleString("pt-BR")}
+                  </div>
+                  <p className="text-xs sm:text-sm text-slate-600 mt-1">
+                    Total (todas as lojas)
+                  </p>
+                </CardContent>
+              </Card>
+            </Link>
+            <Link href="/inventory/products">
+              <Card className="hover:bg-slate-50 transition-colors cursor-pointer h-full">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+                  <CardTitle className="text-xs sm:text-sm font-medium">
+                    Estoque baixo (≤5 un)
+                  </CardTitle>
+                  <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-amber-500" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl sm:text-3xl font-bold text-amber-600">
+                    {stockOverview.lowStockCount}
+                  </div>
+                  <p className="text-xs sm:text-sm text-slate-600 mt-1">
+                    Produtos para repor
+                  </p>
+                </CardContent>
+              </Card>
+            </Link>
+          </div>
+        </div>
+      )}
 
       <Card className="shadow-sm">
         <CardHeader className="pb-3 sm:pb-4">

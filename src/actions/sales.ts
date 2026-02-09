@@ -9,6 +9,11 @@ import {
   stores,
   cashClosures,
   profiles,
+  products,
+  organizations,
+  productVariants,
+  colors,
+  sizes,
 } from "@/db/schema";
 import { eq, and, isNull, gte, lte, sql, desc } from "drizzle-orm";
 import { getUserSession } from "@/lib/get-user-session";
@@ -202,6 +207,103 @@ export async function completeSale(
     console.error("Erro ao finalizar venda:", err);
     return { error: "Erro ao processar venda. Tente novamente." };
   }
+}
+
+export type SaleReceiptData = {
+  organization: { name: string; document?: string | null };
+  store: { name: string };
+  items: { name: string; quantity: number; price: number; total: number }[];
+  total: number;
+  date: Date;
+  orderId: string;
+};
+
+export async function getSaleForReceipt(
+  saleId: string
+): Promise<{ error: string } | { data: SaleReceiptData }> {
+  const session = await getUserSession();
+  if (!session?.user?.id) return { error: "Não autorizado" };
+
+  const [sale] = await db
+    .select({
+      id: sales.id,
+      totalCents: sales.totalCents,
+      createdAt: sales.createdAt,
+      storeId: sales.storeId,
+      organizationId: sales.organizationId,
+    })
+    .from(sales)
+    .where(
+      and(
+        eq(sales.id, saleId),
+        eq(sales.organizationId, session.organizationId)
+      )
+    )
+    .limit(1);
+
+  if (!sale) return { error: "Venda não encontrada." };
+
+  const [org] = await db
+    .select({
+      name: organizations.name,
+      document: organizations.document,
+    })
+    .from(organizations)
+    .where(eq(organizations.id, sale.organizationId))
+    .limit(1);
+
+  const [store] = await db
+    .select({ name: stores.name })
+    .from(stores)
+    .where(eq(stores.id, sale.storeId))
+    .limit(1);
+
+  const rows = await db
+    .select({
+      productName: products.name,
+      quantity: saleItems.quantity,
+      unitPriceCents: saleItems.unitPriceCents,
+      colorName: colors.name,
+      sizeName: sizes.name,
+    })
+    .from(saleItems)
+    .innerJoin(products, eq(saleItems.productId, products.id))
+    .leftJoin(productVariants, eq(saleItems.variantId, productVariants.id))
+    .leftJoin(colors, eq(productVariants.colorId, colors.id))
+    .leftJoin(sizes, eq(productVariants.sizeId, sizes.id))
+    .where(eq(saleItems.saleId, saleId));
+
+  const items = rows.map((r) => {
+    const priceReais = r.unitPriceCents / 100;
+    const totalReais = priceReais * r.quantity;
+    const details = [r.colorName, r.sizeName].filter(Boolean).join(" / ");
+    const name =
+      details.length > 0
+        ? `${r.productName} (${details})`
+        : r.productName;
+    return {
+      name,
+      quantity: r.quantity,
+      price: priceReais,
+      total: totalReais,
+    };
+  });
+
+  const totalReais = sale.totalCents / 100;
+
+  return {
+    data: {
+      organization: {
+        name: org?.name ?? "Empresa",
+        document: org?.document ?? null,
+      },
+      store: { name: store?.name ?? "Loja" },
+      items,
+      total: totalReais,
+      date: sale.createdAt ?? new Date(),
+      orderId: sale.id,
+    },
+  };
 }
 
 export async function closeDailyCash(storeId?: string | null) {

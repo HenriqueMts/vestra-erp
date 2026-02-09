@@ -123,3 +123,52 @@
     @apply bg-background text-foreground;
   }
 }
+
+@page {
+  size: 80mm auto;
+  margin: 5mm;
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  [data-print="true"],
+  [data-print="true"] * {
+    visibility: visible;
+  }
+  [data-print="true"] {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 80mm !important;
+    max-width: 80mm !important;
+    min-height: auto !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: white !important;
+    box-shadow: none !important;
+  }
+  [data-print="true"] .receipt-print-area,
+  [data-print="true"].receipt-print-area {
+    overflow: visible !important;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+  }
+  [data-print="true"] .receipt-print-area::-webkit-scrollbar,
+  [data-print="true"].receipt-print-area::-webkit-scrollbar {
+    display: none !important;
+  }
+  [data-print-barcode="true"],
+  [data-print-barcode="true"] * {
+    visibility: visible;
+  }
+  [data-print-barcode="true"] {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    background: white;
+  }
+}

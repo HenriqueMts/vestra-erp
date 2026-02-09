@@ -149,25 +149,20 @@ export const productImages = pgTable("product_images", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-export const productVariants = pgTable(
-  "product_variants",
-  {
-    id: uuid("id").defaultRandom().primaryKey(),
-    productId: uuid("product_id")
-      .notNull()
-      .references(() => products.id, { onDelete: "cascade" }),
+export const productVariants = pgTable("product_variants", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  productId: uuid("product_id")
+    .notNull()
+    .references(() => products.id, { onDelete: "cascade" }),
 
-    colorId: uuid("color_id").references(() => colors.id),
-    sizeId: uuid("size_id").references(() => sizes.id),
+  colorId: uuid("color_id").references(() => colors.id),
+  sizeId: uuid("size_id").references(() => sizes.id),
 
-    sku: text("sku").notNull(),
+  // SKU da variante = SKU do produto (pai); não é único por variante
+  sku: text("sku").notNull(),
 
-    createdAt: timestamp("created_at").defaultNow(),
-  },
-  (table) => ({
-    uniqueSku: uniqueIndex("unique_sku_variant").on(table.sku),
-  })
-);
+  createdAt: timestamp("created_at").defaultNow(),
+});
 
 export const inventory = pgTable(
   "inventory",
