@@ -27,7 +27,6 @@ export async function createStore(data: StoreInput) {
       organizationId,
       name: data.name,
       address: data.address,
-      // Phone removido
     });
 
     revalidatePath("/settings");
@@ -48,7 +47,7 @@ export async function deleteStore(storeId: string) {
       .select()
       .from(stores)
       .where(
-        and(eq(stores.id, storeId), eq(stores.organizationId, organizationId)),
+        and(eq(stores.id, storeId), eq(stores.organizationId, organizationId))
       )
       .limit(1);
 

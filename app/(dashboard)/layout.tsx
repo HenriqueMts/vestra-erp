@@ -17,12 +17,21 @@ export default async function DashboardLayout({
     redirect("/update-password");
   }
 
-  const userInitials = session.user.email
-    ? session.user.email.substring(0, 2).toUpperCase()
-    : "US";
+  const displayName =
+    session.profile?.name ||
+    session.user.user_metadata?.name ||
+    session.user.email?.split("@")[0] ||
+    "Usuário";
+
+  const userInitials = displayName
+    .split(" ")
+    .map((n: string) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2) || "US";
 
   const userData = {
-    name: session.user.user_metadata?.name || "Usuário",
+    name: displayName,
     email: session.user.email || "",
     initials: userInitials,
   };

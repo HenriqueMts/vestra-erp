@@ -7,6 +7,11 @@ import { revalidatePath } from "next/cache";
 import { getUserSession } from "@/lib/get-user-session";
 import { validateCPF, validateCNPJ } from "@/utils/validators";
 
+/** Normaliza documento para apenas dígitos (busca no banco) */
+function normalizeDocument(value: string): string {
+  return value.replace(/\D/g, "");
+}
+
 interface ClientFormState {
   success?: boolean;
   errors?: {
@@ -15,6 +20,14 @@ interface ClientFormState {
     email?: string[];
   };
   message?: string;
+  client?: {
+    id: string;
+    name: string;
+    document: string;
+    type: "PF" | "PJ";
+    email: string | null;
+    phone: string | null;
+  };
 }
 
 export async function createClient(
@@ -44,18 +57,32 @@ export async function createClient(
   }
 
   try {
-    await db.insert(clients).values({
-      organizationId,
-      createdBy: user.id,
-      name,
-      document,
-      email,
-      phone,
-      type,
-    });
+    const [created] = await db
+      .insert(clients)
+      .values({
+        organizationId,
+        createdBy: user.id,
+        name,
+        document,
+        email: email || null,
+        phone: phone || null,
+        type,
+      })
+      .returning({
+        id: clients.id,
+        name: clients.name,
+        document: clients.document,
+        type: clients.type,
+        email: clients.email,
+        phone: clients.phone,
+      });
 
     revalidatePath("/crm");
-    return { success: true, message: "Cliente criado com sucesso!" };
+    return {
+      success: true,
+      message: "Cliente criado com sucesso!",
+      client: created ?? undefined,
+    };
   } catch (error) {
     console.error("Erro ao criar cliente:", error);
 
@@ -124,4 +151,23 @@ export async function deleteClient(id: string) {
     console.error("Erro ao deletar", error);
     return { success: false, message: "Erro ao excluir cliente." };
   }
+}
+
+/** Busca cliente por CPF/CNPJ na organização (para POS). */
+export async function findClientByDocument(document: string) {
+  const { organizationId } = await getUserSession();
+  if (!organizationId) return null;
+
+  const normalized = normalizeDocument(document);
+  if (normalized.length !== 11 && normalized.length !== 14) return null;
+
+  const list = await db
+    .select()
+    .from(clients)
+    .where(eq(clients.organizationId, organizationId));
+
+  const client = list.find(
+    (c) => normalizeDocument(c.document) === normalized
+  );
+  return client ?? null;
 }

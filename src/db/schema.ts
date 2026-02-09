@@ -12,14 +12,20 @@ import {
 import { relations } from "drizzle-orm";
 
 // ----------------------------------------------------------------------
-// 1. ENUMS
+//  ENUMS
 // ----------------------------------------------------------------------
 export const typeEnum = pgEnum("client_type", ["PF", "PJ"]);
 export const roleEnum = pgEnum("role", ["owner", "manager", "seller"]);
 export const statusEnum = pgEnum("status", ["active", "inactive", "archived"]);
+export const paymentMethodEnum = pgEnum("payment_method", [
+  "pix",
+  "credit",
+  "debit",
+  "cash",
+]);
 
 // ----------------------------------------------------------------------
-// 2. TABELAS ESTRUTURAIS (Auth & Org)
+//  AUTH & ORGANIZATIONS
 // ----------------------------------------------------------------------
 
 export const profiles = pgTable("profiles", {
@@ -72,7 +78,7 @@ export const members = pgTable("members", {
 });
 
 // ----------------------------------------------------------------------
-// 3. TABELAS DE PRODUTOS (CATÁLOGO AVANÇADO)
+//  PRODUTOS
 // ----------------------------------------------------------------------
 
 export const categories = pgTable(
@@ -89,9 +95,9 @@ export const categories = pgTable(
   (table) => ({
     uniqueCategoryPerOrg: uniqueIndex("unique_category_per_org").on(
       table.organizationId,
-      table.slug,
+      table.slug
     ),
-  }),
+  })
 );
 
 export const colors = pgTable("colors", {
@@ -112,7 +118,6 @@ export const sizes = pgTable("sizes", {
   order: integer("order").default(0),
 });
 
-// PRODUTO PAI (A "Vitrine")
 export const products = pgTable("products", {
   id: uuid("id").defaultRandom().primaryKey(),
   organizationId: uuid("organization_id")
@@ -123,9 +128,9 @@ export const products = pgTable("products", {
 
   name: text("name").notNull(),
   description: text("description"),
-  imageUrl: text("image_url"), // Foto de Capa
+  imageUrl: text("image_url"),
 
-  sku: text("sku"), // Opcional no pai se usar variantes, ou obrigatório se for produto simples. Deixei flexível.
+  sku: text("sku"),
 
   basePrice: integer("base_price").notNull(),
   costPrice: integer("cost_price"),
@@ -134,7 +139,6 @@ export const products = pgTable("products", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-// IMAGENS SECUNDÁRIAS (Galeria)
 export const productImages = pgTable("product_images", {
   id: uuid("id").defaultRandom().primaryKey(),
   productId: uuid("product_id")
@@ -162,7 +166,7 @@ export const productVariants = pgTable(
   },
   (table) => ({
     uniqueSku: uniqueIndex("unique_sku_variant").on(table.sku),
-  }),
+  })
 );
 
 export const inventory = pgTable(
@@ -173,7 +177,6 @@ export const inventory = pgTable(
       .notNull()
       .references(() => stores.id, { onDelete: "cascade" }),
 
-    // ATUALIZAÇÃO CRÍTICA: Aceita Produto OU Variante
     productId: uuid("product_id").references(() => products.id, {
       onDelete: "cascade",
     }),
@@ -188,21 +191,19 @@ export const inventory = pgTable(
     updatedAt: timestamp("updated_at").defaultNow(),
   },
   (table) => ({
-    // Garante unicidade do estoque para Produto Simples
     uniqueProductStock: uniqueIndex("unique_product_stock").on(
       table.storeId,
-      table.productId,
+      table.productId
     ),
-    // Garante unicidade do estoque para Variantes (quando houver)
     uniqueVariantStock: uniqueIndex("unique_variant_stock").on(
       table.storeId,
-      table.variantId,
+      table.variantId
     ),
-  }),
+  })
 );
 
 // ----------------------------------------------------------------------
-// 4. CLIENTES
+//  CLIENTES
 // ----------------------------------------------------------------------
 export const clients = pgTable(
   "clients",
@@ -224,10 +225,47 @@ export const clients = pgTable(
   (table) => ({
     uniqueDocumentPerOrg: uniqueIndex("unique_document_per_org").on(
       table.organizationId,
-      table.document,
+      table.document
     ),
-  }),
+  })
 );
+
+// ----------------------------------------------------------------------
+//  VENDAS (POS)
+// ----------------------------------------------------------------------
+export const sales = pgTable("sales", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  organizationId: uuid("organization_id")
+    .notNull()
+    .references(() => organizations.id, { onDelete: "cascade" }),
+  storeId: uuid("store_id")
+    .notNull()
+    .references(() => stores.id, { onDelete: "cascade" }),
+  clientId: uuid("client_id").references(() => clients.id, {
+    onDelete: "set null",
+  }),
+  sellerId: uuid("seller_id")
+    .notNull()
+    .references(() => profiles.id, { onDelete: "restrict" }),
+  paymentMethod: paymentMethodEnum("payment_method").notNull(),
+  totalCents: integer("total_cents").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const saleItems = pgTable("sale_items", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  saleId: uuid("sale_id")
+    .notNull()
+    .references(() => sales.id, { onDelete: "cascade" }),
+  productId: uuid("product_id")
+    .notNull()
+    .references(() => products.id, { onDelete: "restrict" }),
+  variantId: uuid("variant_id").references(() => productVariants.id, {
+    onDelete: "set null",
+  }),
+  quantity: integer("quantity").notNull(),
+  unitPriceCents: integer("unit_price_cents").notNull(),
+});
 
 // ----------------------------------------------------------------------
 //  RELATIONS
@@ -241,6 +279,7 @@ export const organizationRelations = relations(organizations, ({ many }) => ({
   categories: many(categories),
   colors: many(colors),
   sizes: many(sizes),
+  sales: many(sales),
 }));
 
 export const categoryRelations = relations(categories, ({ one, many }) => ({
@@ -261,8 +300,8 @@ export const productRelations = relations(products, ({ one, many }) => ({
     references: [categories.id],
   }),
   variants: many(productVariants),
-  images: many(productImages), // Relação Nova
-  inventory: many(inventory), // Relação Direta de Estoque
+  images: many(productImages),
+  inventory: many(inventory),
 }));
 
 export const productImagesRelations = relations(productImages, ({ one }) => ({
@@ -294,7 +333,6 @@ export const inventoryRelations = relations(inventory, ({ one }) => ({
     references: [stores.id],
   }),
   product: one(products, {
-    // Relação Opcional com Produto
     fields: [inventory.productId],
     references: [products.id],
   }),
@@ -304,10 +342,46 @@ export const inventoryRelations = relations(inventory, ({ one }) => ({
   }),
 }));
 
-export const clientRelations = relations(clients, ({ one }) => ({
+export const clientRelations = relations(clients, ({ one, many }) => ({
   organization: one(organizations, {
     fields: [clients.organizationId],
     references: [organizations.id],
+  }),
+  sales: many(sales),
+}));
+
+export const salesRelations = relations(sales, ({ one, many }) => ({
+  organization: one(organizations, {
+    fields: [sales.organizationId],
+    references: [organizations.id],
+  }),
+  store: one(stores, {
+    fields: [sales.storeId],
+    references: [stores.id],
+  }),
+  client: one(clients, {
+    fields: [sales.clientId],
+    references: [clients.id],
+  }),
+  seller: one(profiles, {
+    fields: [sales.sellerId],
+    references: [profiles.id],
+  }),
+  items: many(saleItems),
+}));
+
+export const saleItemsRelations = relations(saleItems, ({ one }) => ({
+  sale: one(sales, {
+    fields: [saleItems.saleId],
+    references: [sales.id],
+  }),
+  product: one(products, {
+    fields: [saleItems.productId],
+    references: [products.id],
+  }),
+  variant: one(productVariants, {
+    fields: [saleItems.variantId],
+    references: [productVariants.id],
   }),
 }));
 
@@ -335,4 +409,5 @@ export const storesRelations = relations(stores, ({ one, many }) => ({
   }),
   inventory: many(inventory),
   members: many(members),
+  sales: many(sales),
 }));

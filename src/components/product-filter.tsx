@@ -5,7 +5,6 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -53,7 +52,6 @@ export function ProductFilter() {
     }
 
     params.set("page", "1");
-
     replace(`${pathname}?${params.toString()}`);
   }
 
@@ -66,19 +64,19 @@ export function ProductFilter() {
     <Form {...form}>
       <form
         onSubmit={form.handleSubmit(onSubmit)}
-        className="flex flex-col sm:flex-row gap-2 items-end sm:items-center w-full sm:w-auto"
+        className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center w-full sm:w-auto"
       >
         <FormField
           control={form.control}
           name="name"
           render={({ field }) => (
-            <FormItem className="w-full sm:w-[250px] space-y-0">
+            <FormItem className="w-full sm:w-[200px] lg:w-[250px] space-y-0">
               <FormControl>
                 <div className="relative">
                   <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-500" />
                   <Input
                     placeholder="Buscar produto..."
-                    className="pl-9 bg-white"
+                    className="pl-9 bg-white text-sm sm:text-base"
                     {...field}
                   />
                 </div>
@@ -91,7 +89,7 @@ export function ProductFilter() {
           control={form.control}
           name="status"
           render={({ field }) => (
-            <FormItem className="w-full sm:w-[150px] space-y-0">
+            <FormItem className="w-full sm:w-[140px] lg:w-[150px] space-y-0">
               <Select
                 onValueChange={(val) => {
                   field.onChange(val);
@@ -100,7 +98,7 @@ export function ProductFilter() {
                 defaultValue={field.value}
               >
                 <FormControl>
-                  <SelectTrigger className="bg-white">
+                  <SelectTrigger className="bg-white text-sm sm:text-base">
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>
                 </FormControl>
@@ -116,7 +114,11 @@ export function ProductFilter() {
         />
 
         <div className="flex items-center gap-2">
-          <Button type="submit" variant="secondary">
+          <Button
+            type="submit"
+            variant="secondary"
+            className="flex-1 sm:flex-none text-sm sm:text-base"
+          >
             Filtrar
           </Button>
           {(searchParams.get("q") || searchParams.get("status")) && (
@@ -126,6 +128,7 @@ export function ProductFilter() {
               size="icon"
               onClick={clearFilters}
               title="Limpar filtros"
+              className="flex-shrink-0"
             >
               <X className="h-4 w-4" />
             </Button>

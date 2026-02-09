@@ -7,88 +7,104 @@ import {
   inventory,
   stores,
   categories,
+  colors,
+  sizes,
+  productVariants,
 } from "@/db/schema";
-import { eq, asc, and } from "drizzle-orm";
+import { eq, and, notInArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { getUserSession } from "@/lib/get-user-session";
 import { getCurrentOrg } from "@/utils/auth";
-import { z } from "zod";
+import {
+  saveProductSchema,
+  type SaveProductInput,
+  type ProductOptions,
+} from "@/types/product";
 
-// 1. Atualizamos o Schema do Zod para incluir 'status'
-const productSchema = z.object({
-  id: z.string().optional(),
-  name: z.string().min(1),
-  categoryId: z.string().min(1),
-  price: z.number(),
-  description: z.string().optional(),
-  // Novo campo status (enum)
-  status: z.enum(["active", "inactive", "archived"]).default("active"),
-  quantity: z.number().int().default(0),
-  images: z.array(z.string()).default([]),
-});
+export async function getProductOptions(): Promise<ProductOptions> {
+  const { organizationId } = await getCurrentOrg();
 
-type ProductInput = z.infer<typeof productSchema>;
+  if (!organizationId) {
+    return { categories: [], stores: [], colors: [], sizes: [] };
+  }
 
-export async function saveProduct(data: ProductInput, organizationId: string) {
+  const [cats, st, clr, sz] = await Promise.all([
+    db.query.categories.findMany({
+      where: eq(categories.organizationId, organizationId),
+      columns: { id: true, name: true },
+      orderBy: (categories, { asc }) => [asc(categories.name)],
+    }),
+    db.query.stores.findMany({
+      where: eq(stores.organizationId, organizationId),
+      columns: { id: true, name: true },
+    }),
+    db.query.colors.findMany({
+      where: eq(colors.organizationId, organizationId),
+      columns: { id: true, name: true, hex: true },
+    }),
+    db.query.sizes.findMany({
+      where: eq(sizes.organizationId, organizationId),
+      columns: { id: true, name: true },
+      orderBy: (sizes, { asc }) => [asc(sizes.order)],
+    }),
+  ]);
+
+  return {
+    categories: cats,
+    stores: st,
+    colors: clr,
+    sizes: sz,
+  };
+}
+
+export async function saveProduct(
+  data: SaveProductInput,
+  organizationId: string,
+) {
   const { user } = await getUserSession();
   if (!user) return { error: "Não autorizado" };
 
+  const validation = saveProductSchema.safeParse(data);
+  if (!validation.success) {
+    const firstError = validation.error.issues?.[0];
+    return { error: firstError?.message || "Dados inválidos" };
+  }
+
   try {
     const priceInCents = Math.round(data.price * 100);
-
     const coverImage = data.images.length > 0 ? data.images[0] : null;
-    const galleryImages = data.images.length > 1 ? data.images.slice(1) : [];
-
     let productId = data.id;
+    const isNewProduct = !data.id;
 
     if (productId) {
-      // --- EDIÇÃO ---
       await db
         .update(products)
         .set({
           name: data.name,
           categoryId: data.categoryId,
           basePrice: priceInCents,
-          description: data.description,
+          description: data.description || null,
           imageUrl: coverImage,
-          status: data.status, // <--- Atualiza o Status
+          status: data.status,
+          sku: data.hasVariants ? null : data.sku || null,
         })
         .where(eq(products.id, productId));
     } else {
-      // --- CRIAÇÃO ---
-      const sku = `PROD-${Date.now()}`;
-
       const [newProduct] = await db
         .insert(products)
         .values({
           organizationId,
           name: data.name,
-          sku,
-          basePrice: priceInCents,
           categoryId: data.categoryId,
-          description: data.description,
+          basePrice: priceInCents,
+          description: data.description || null,
           imageUrl: coverImage,
-          status: data.status, // <--- Salva o Status
+          status: data.status,
+          sku: data.hasVariants ? null : data.sku || null,
         })
         .returning({ id: products.id });
 
       productId = newProduct.id;
-
-      const [mainStore] = await db
-        .select()
-        .from(stores)
-        .where(eq(stores.organizationId, organizationId))
-        .orderBy(asc(stores.createdAt))
-        .limit(1);
-
-      if (mainStore && data.quantity > 0) {
-        await db.insert(inventory).values({
-          storeId: mainStore.id,
-          productId: productId,
-          quantity: data.quantity,
-          minStock: 5,
-        });
-      }
     }
 
     if (productId) {
@@ -96,26 +112,115 @@ export async function saveProduct(data: ProductInput, organizationId: string) {
         .delete(productImages)
         .where(eq(productImages.productId, productId));
 
-      if (galleryImages.length > 0) {
-        const imageInserts = galleryImages.map((url, index) => ({
-          productId: productId!,
-          url,
-          order: index,
-        }));
-
-        await db.insert(productImages).values(imageInserts);
+      if (data.images.length > 0) {
+        await db.insert(productImages).values(
+          data.images.map((url, index) => ({
+            productId: productId!,
+            url,
+            order: index,
+          })),
+        );
       }
     }
 
-    revalidatePath("/dashboard/products");
+    if (data.hasVariants && data.variants.length > 0) {
+      const submittedVariantIds = data.variants
+        .map((v) => v.id)
+        .filter((id): id is string => !!id);
+
+      if (submittedVariantIds.length > 0) {
+        await db
+          .delete(productVariants)
+          .where(
+            and(
+              eq(productVariants.productId, productId!),
+              notInArray(productVariants.id, submittedVariantIds),
+            ),
+          );
+      } else {
+        await db
+          .delete(productVariants)
+          .where(eq(productVariants.productId, productId!));
+      }
+
+      await db.delete(inventory).where(eq(inventory.productId, productId!));
+
+      for (const variant of data.variants) {
+        let variantId: string | undefined = variant.id;
+
+        // Em produto novo, variantes são sempre inseridas (variant.id do form não existe no banco)
+        if (!isNewProduct && variantId) {
+          await db
+            .update(productVariants)
+            .set({
+              sku: variant.sku,
+              colorId: variant.colorId || null,
+              sizeId: variant.sizeId || null,
+            })
+            .where(eq(productVariants.id, variantId));
+        } else {
+          const [newVariant] = await db
+            .insert(productVariants)
+            .values({
+              productId: productId!,
+              sku: variant.sku,
+              colorId: variant.colorId || null,
+              sizeId: variant.sizeId || null,
+            })
+            .returning({ id: productVariants.id });
+          variantId = newVariant.id;
+        }
+
+        if (variant.inventory.length > 0) {
+          await db.insert(inventory).values(
+            variant.inventory.map((inv) => ({
+              storeId: inv.storeId,
+              productId: productId!,
+              variantId: variantId!,
+              quantity: inv.quantity,
+              minStock: 5,
+            })),
+          );
+        }
+      }
+    } else {
+      await db
+        .delete(productVariants)
+        .where(eq(productVariants.productId, productId!));
+      await db.delete(inventory).where(eq(inventory.productId, productId!));
+
+      if (data.simpleInventory.length > 0) {
+        await db.insert(inventory).values(
+          data.simpleInventory.map((inv) => ({
+            storeId: inv.storeId,
+            productId: productId!,
+            variantId: null,
+            quantity: inv.quantity,
+            minStock: 5,
+          })),
+        );
+      }
+    }
+
+    revalidatePath("/inventory/products");
     return { success: true, message: "Produto salvo com sucesso!" };
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Erro ao salvar produto:", error);
-    return { error: "Erro interno ao salvar." };
+
+    const errorString = String(error);
+    if (
+      errorString.includes("unique_sku") ||
+      errorString.includes("duplicate key")
+    ) {
+      return {
+        error: "Já existe um produto ou variante com este SKU cadastrado.",
+      };
+    }
+
+    return { error: "Erro interno ao salvar produto." };
   }
 }
 
-// ... (mantenha deleteProduct e getProductOptions como estavam)
 export async function deleteProduct(productId: string, organizationId: string) {
   const { user } = await getUserSession();
 
@@ -141,30 +246,10 @@ export async function deleteProduct(productId: string, organizationId: string) {
 
     await db.delete(products).where(eq(products.id, productId));
 
-    revalidatePath("/dashboard/products");
+    revalidatePath("/inventory/products");
     return { success: true, message: "Produto removido com sucesso." };
   } catch (error) {
     console.error("Erro ao deletar produto:", error);
     return { error: "Erro interno ao tentar deletar o produto." };
   }
-}
-
-export async function getProductOptions() {
-  const { organizationId } = await getCurrentOrg();
-
-  if (!organizationId) {
-    return { categories: [] };
-  }
-
-  const categoriesList = await db.query.categories.findMany({
-    where: eq(categories.organizationId, organizationId),
-    columns: {
-      id: true,
-      name: true,
-    },
-  });
-
-  return {
-    categories: categoriesList,
-  };
 }
