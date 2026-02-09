@@ -144,7 +144,13 @@ export default async function ProductsPage({
                       Status
                     </TableHead>
                     <TableHead className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider py-3 sm:py-4 hidden sm:table-cell">
-                      Preço Base
+                      Venda
+                    </TableHead>
+                    <TableHead className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider py-3 sm:py-4 hidden lg:table-cell">
+                      Custo
+                    </TableHead>
+                    <TableHead className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider py-3 sm:py-4 hidden xl:table-cell">
+                      Lucro
                     </TableHead>
                     <TableHead className="w-[40px] sm:w-[50px]"></TableHead>
                   </TableRow>
@@ -154,7 +160,7 @@ export default async function ProductsPage({
                   {isListEmpty ? (
                     <TableRow>
                       <TableCell
-                        colSpan={7}
+                        colSpan={9}
                         className="h-24 text-center text-slate-500 text-sm"
                       >
                         Nenhum produto encontrado com esses filtros.
@@ -256,12 +262,44 @@ export default async function ProductsPage({
                             {formatCurrency(product.basePrice)}
                           </TableCell>
 
+                          <TableCell className="text-slate-600 text-xs sm:text-sm align-middle hidden lg:table-cell">
+                            {product.costPrice != null
+                              ? formatCurrency(product.costPrice)
+                              : "—"}
+                          </TableCell>
+
+                          <TableCell className="text-xs sm:text-sm align-middle hidden xl:table-cell">
+                            {product.costPrice != null ? (
+                              <span className="text-green-700 font-medium">
+                                {formatCurrency(
+                                  product.basePrice - product.costPrice
+                                )}{" "}
+                                <span className="text-slate-500 font-normal">
+                                  (
+                                  {product.basePrice > 0
+                                    ? (
+                                        ((product.basePrice -
+                                          product.costPrice) /
+                                          product.basePrice) *
+                                        100
+                                      ).toFixed(0)
+                                    : 0}
+                                  %)
+                                </span>
+                              </span>
+                            ) : (
+                              "—"
+                            )}
+                          </TableCell>
+
                           <TableCell className="align-middle">
                             <ProductRowActions
                               id={product.id}
                               status={product.status}
                               name={product.name}
                               basePrice={product.basePrice}
+                              costPrice={product.costPrice}
+                              sku={product.sku}
                               categoryId={product.categoryId}
                               description={product.description}
                               imageUrl={product.imageUrl}

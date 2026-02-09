@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { MoreHorizontal, Pencil, Trash2, Barcode } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -31,12 +31,15 @@ import {
 import { toast } from "sonner";
 import { ProductForm } from "./product-form";
 import { deleteProduct } from "@/actions/products";
+import { BarcodeLabelPrintModal } from "./barcode-label-print-modal";
 import type { ProductOptions, ProductInitialData } from "@/types/product";
 
 interface ProductRowActionsProps {
   id: string;
   name: string;
   basePrice: number;
+  costPrice?: number | null;
+  sku?: string | null;
   categoryId: string | null;
   description: string | null;
   imageUrl: string | null;
@@ -45,7 +48,7 @@ interface ProductRowActionsProps {
   inventory?: Array<{ id: string; storeId: string; quantity: number }>;
   variants?: Array<{
     id: string;
-    sku: string;
+    sku?: string | null;
     colorId: string | null;
     sizeId: string | null;
     inventory: Array<{ id: string; storeId: string; quantity: number }>;
@@ -58,6 +61,8 @@ export function ProductRowActions({
   id,
   name,
   basePrice,
+  costPrice = null,
+  sku = null,
   categoryId,
   description,
   imageUrl,
@@ -70,6 +75,7 @@ export function ProductRowActions({
 }: Readonly<ProductRowActionsProps>) {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [isBarcodeOpen, setIsBarcodeOpen] = useState(false);
 
   const handleDelete = async () => {
     const result = await deleteProduct(id, organizationId);
@@ -85,6 +91,7 @@ export function ProductRowActions({
     id,
     name,
     basePrice,
+    costPrice: costPrice ?? null,
     categoryId: categoryId ?? "",
     description: description ?? "",
     imageUrl: imageUrl ?? null,
@@ -112,6 +119,12 @@ export function ProductRowActions({
             className="cursor-pointer gap-2 text-blue-600 text-sm"
           >
             <Pencil className="h-4 w-4" /> Editar
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() => setIsBarcodeOpen(true)}
+            className="cursor-pointer gap-2 text-slate-700 text-sm"
+          >
+            <Barcode className="h-4 w-4" /> Imprimir etiqueta (cód. barras)
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem
@@ -143,6 +156,21 @@ export function ProductRowActions({
           />
         </DialogContent>
       </Dialog>
+
+      <BarcodeLabelPrintModal
+        open={isBarcodeOpen}
+        onOpenChange={setIsBarcodeOpen}
+        productName={name}
+        productSku={sku ?? null}
+        basePriceCents={basePrice}
+        variants={variants.map((v) => ({
+          id: v.id,
+          sku: v.sku ?? undefined,
+          colorId: v.colorId,
+          sizeId: v.sizeId,
+        }))}
+        options={options}
+      />
 
       <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
         <AlertDialogContent className="bg-white w-[90vw] sm:w-full max-w-md">

@@ -83,6 +83,8 @@ export function ProductForm({
       id: initialData?.id,
       name: initialData?.name || "",
       price: initialData?.basePrice ? initialData.basePrice / 100 : 0,
+      costPrice:
+        initialData?.costPrice != null ? initialData.costPrice / 100 : undefined,
       description: initialData?.description || "",
       categoryId: initialData?.categoryId || "",
       status: initialData?.status || "active",
@@ -93,7 +95,7 @@ export function ProductForm({
       variants:
         initialData?.variants?.map((v) => ({
           id: v.id,
-          sku: v.sku,
+          sku: v.sku ?? "",
           colorId: v.colorId || undefined,
           sizeId: v.sizeId || undefined,
           inventory: options.stores.map((store) => {
@@ -106,6 +108,25 @@ export function ProductForm({
 
   const { watch, control } = form;
   const hasVariants = watch("hasVariants");
+  const price = watch("price");
+  const costPrice = watch("costPrice");
+  const saleNum = Number(price);
+  const costNum =
+    costPrice === undefined || costPrice === null
+      ? null
+      : (() => {
+          const n = Number(costPrice);
+          return Number.isFinite(n) ? n : null;
+        })();
+  const hasCost = costNum !== null && !Number.isNaN(costNum);
+  const lucro =
+    hasCost && Number.isFinite(saleNum)
+      ? saleNum - costNum
+      : null;
+  const margemPercent =
+    hasCost && Number.isFinite(saleNum) && saleNum > 0 && lucro !== null
+      ? (lucro / saleNum) * 100
+      : null;
 
   const {
     fields: variantFields,
@@ -234,7 +255,7 @@ export function ProductForm({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-sm sm:text-base">
-                      Preço (R$)
+                      Preço de venda (R$)
                     </FormLabel>
                     <FormControl>
                       <Input
@@ -244,6 +265,32 @@ export function ProductForm({
                         placeholder="0.00"
                         className="text-sm sm:text-base"
                         {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={control}
+                name="costPrice"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm sm:text-base">
+                      Preço de custo (R$)
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        placeholder="Opcional"
+                        className="text-sm sm:text-base"
+                        value={field.value ?? ""}
+                        onChange={(e) => {
+                          const v = e.target.value;
+                          field.onChange(v === "" ? undefined : v);
+                        }}
                       />
                     </FormControl>
                     <FormMessage />
@@ -277,6 +324,22 @@ export function ProductForm({
                 )}
               />
             </div>
+
+            {margemPercent !== null && lucro !== null && (
+              <div className="flex flex-wrap gap-4 p-3 rounded-lg bg-slate-100 border border-slate-200 text-sm">
+                <span className="text-slate-600">
+                  <strong className="text-slate-800">Lucro por unidade:</strong>{" "}
+                  {new Intl.NumberFormat("pt-BR", {
+                    style: "currency",
+                    currency: "BRL",
+                  }).format(lucro)}
+                </span>
+                <span className="text-slate-600">
+                  <strong className="text-slate-800">Margem:</strong>{" "}
+                  {margemPercent.toFixed(1)}%
+                </span>
+              </div>
+            )}
 
             <FormField
               control={control}
@@ -330,27 +393,27 @@ export function ProductForm({
 
           <Separator />
 
-          {!hasVariants && (
-            <div className="space-y-3 sm:space-y-4 animate-in fade-in slide-in-from-top-2">
-              <FormField
-                control={control}
-                name="sku"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-sm sm:text-base">
-                      SKU (Referência Única)
-                    </FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="Ex: CAM-BAS-001"
-                        className="text-sm sm:text-base"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+          <div className="space-y-3 sm:space-y-4 animate-in fade-in slide-in-from-top-2">
+            <FormField
+              control={control}
+              name="sku"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-sm sm:text-base">
+                    SKU (código da peça)
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="Ex: CAM-BAS-001"
+                      className="text-sm sm:text-base"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            {!hasVariants && (
 
               <div className="space-y-3">
                 <FormLabel className="text-sm sm:text-base">
@@ -399,8 +462,8 @@ export function ProductForm({
                   </div>
                 )}
               </div>
-            </div>
-          )}
+            )}
+          </div>
 
           {hasVariants && (
             <div className="space-y-4 sm:space-y-6 animate-in fade-in slide-in-from-top-2">
@@ -429,27 +492,7 @@ export function ProductForm({
                       />
                     )}
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 pr-8 sm:pr-10">
-                      <FormField
-                        control={control}
-                        name={`variants.${index}.sku`}
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className="text-xs sm:text-sm">
-                              SKU da Variante
-                            </FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder="Ref. Única"
-                                className="bg-white text-sm"
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 pr-8 sm:pr-10">
                       <FormField
                         control={control}
                         name={`variants.${index}.colorId`}

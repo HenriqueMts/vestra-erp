@@ -10,8 +10,9 @@ import {
   colors,
   sizes,
   productVariants,
+  saleItems,
 } from "@/db/schema";
-import { eq, and, notInArray } from "drizzle-orm";
+import { eq, and, notInArray, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { getUserSession } from "@/lib/get-user-session";
 import { getCurrentOrg } from "@/utils/auth";
@@ -72,9 +73,15 @@ export async function saveProduct(
 
   try {
     const priceInCents = Math.round(data.price * 100);
+    const costPriceCents =
+      data.costPrice !== undefined && data.costPrice !== null
+        ? Math.round(Number(data.costPrice) * 100)
+        : null;
     const coverImage = data.images.length > 0 ? data.images[0] : null;
     let productId = data.id;
     const isNewProduct = !data.id;
+
+    const productSku = data.sku?.trim() || null;
 
     if (productId) {
       await db
@@ -83,10 +90,11 @@ export async function saveProduct(
           name: data.name,
           categoryId: data.categoryId,
           basePrice: priceInCents,
+          costPrice: costPriceCents,
           description: data.description || null,
           imageUrl: coverImage,
           status: data.status,
-          sku: data.hasVariants ? null : data.sku || null,
+          sku: productSku,
         })
         .where(eq(products.id, productId));
     } else {
@@ -97,10 +105,11 @@ export async function saveProduct(
           name: data.name,
           categoryId: data.categoryId,
           basePrice: priceInCents,
+          costPrice: costPriceCents,
           description: data.description || null,
           imageUrl: coverImage,
           status: data.status,
-          sku: data.hasVariants ? null : data.sku || null,
+          sku: productSku,
         })
         .returning({ id: products.id });
 
@@ -145,15 +154,17 @@ export async function saveProduct(
 
       await db.delete(inventory).where(eq(inventory.productId, productId!));
 
+      const variantSku = productSku ?? "";
+
       for (const variant of data.variants) {
         let variantId: string | undefined = variant.id;
 
-        // Em produto novo, variantes são sempre inseridas (variant.id do form não existe no banco)
+        // Variantes usam o SKU do produto (pai); só cor e tamanho são por variante
         if (!isNewProduct && variantId) {
           await db
             .update(productVariants)
             .set({
-              sku: variant.sku,
+              sku: variantSku,
               colorId: variant.colorId || null,
               sizeId: variant.sizeId || null,
             })
@@ -163,7 +174,7 @@ export async function saveProduct(
             .insert(productVariants)
             .values({
               productId: productId!,
-              sku: variant.sku,
+              sku: variantSku,
               colorId: variant.colorId || null,
               sizeId: variant.sizeId || null,
             })
@@ -244,6 +255,18 @@ export async function deleteProduct(productId: string, organizationId: string) {
       return { error: "Produto não encontrado ou sem permissão." };
     }
 
+    const [salesCount] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(saleItems)
+      .where(eq(saleItems.productId, productId));
+
+    if (Number(salesCount?.count ?? 0) > 0) {
+      return {
+        error:
+          "Não é possível excluir produto que possui vendas vinculadas. Use a opção Arquivar no status do produto.",
+      };
+    }
+
     await db.delete(products).where(eq(products.id, productId));
 
     revalidatePath("/inventory/products");
@@ -252,4 +275,82 @@ export async function deleteProduct(productId: string, organizationId: string) {
     console.error("Erro ao deletar produto:", error);
     return { error: "Erro interno ao tentar deletar o produto." };
   }
+}
+
+const LOW_STOCK_THRESHOLD = 5;
+
+export type StockOverview = {
+  totalProducts: number;
+  totalUnits: number;
+  lowStockCount: number;
+};
+
+export async function getStockOverview(): Promise<StockOverview | null> {
+  const { organizationId } = await getCurrentOrg();
+  if (!organizationId) return null;
+
+  const [totalProductsRow] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(products)
+    .where(
+      and(
+        eq(products.organizationId, organizationId),
+        eq(products.status, "active"),
+      ),
+    );
+
+  const [productUnitsRow] = await db
+    .select({
+      sum: sql<number>`coalesce(sum(${inventory.quantity}), 0)`,
+    })
+    .from(inventory)
+    .innerJoin(products, eq(inventory.productId, products.id))
+    .where(eq(products.organizationId, organizationId));
+
+  const [variantUnitsRow] = await db
+    .select({
+      sum: sql<number>`coalesce(sum(${inventory.quantity}), 0)`,
+    })
+    .from(inventory)
+    .innerJoin(productVariants, eq(inventory.variantId, productVariants.id))
+    .innerJoin(products, eq(productVariants.productId, products.id))
+    .where(eq(products.organizationId, organizationId));
+
+  const totalUnits =
+    Number(productUnitsRow?.sum ?? 0) + Number(variantUnitsRow?.sum ?? 0);
+
+  const activeProducts = await db.query.products.findMany({
+    where: and(
+      eq(products.organizationId, organizationId),
+      eq(products.status, "active"),
+    ),
+    columns: { id: true },
+    with: {
+      inventory: { columns: { quantity: true } },
+      variants: {
+        with: { inventory: { columns: { quantity: true } } },
+      },
+    },
+  });
+
+  let lowStockCount = 0;
+  for (const p of activeProducts) {
+    const variantStock = p.variants.reduce(
+      (acc, v) =>
+        acc + v.inventory.reduce((s, inv) => s + (inv.quantity ?? 0), 0),
+      0,
+    );
+    const simpleStock = p.inventory.reduce(
+      (acc, inv) => acc + (inv.quantity ?? 0),
+      0,
+    );
+    const totalStock = p.variants.length > 0 ? variantStock : simpleStock;
+    if (totalStock <= LOW_STOCK_THRESHOLD) lowStockCount += 1;
+  }
+
+  return {
+    totalProducts: Number(totalProductsRow?.count ?? 0),
+    totalUnits,
+    lowStockCount,
+  };
 }
