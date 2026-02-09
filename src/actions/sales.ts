@@ -27,20 +27,40 @@ export async function completeSale(
   storeId: string,
   paymentMethod: PaymentMethod,
   items: SaleItemInput[],
-  clientId: string | null
+  clientId: string | null,
+  interestRateBps?: number | null,
 ) {
   const session = await getUserSession();
   if (!session?.user?.id) return { error: "Não autorizado" };
 
   if (items.length === 0) return { error: "Nenhum item na venda." };
 
-  const totalCents = items.reduce(
+  const baseTotalCents = items.reduce(
     (acc, i) => acc + i.quantity * i.unitPriceCents,
-    0
+    0,
   );
 
+  const rawInterestRateBps =
+    typeof interestRateBps === "number" ? Math.trunc(interestRateBps) : 0;
+
+  if (!Number.isFinite(rawInterestRateBps)) {
+    return { error: "Percentual de juros inválido." };
+  }
+
+  const effectiveInterestRateBps =
+    paymentMethod === "credit" ? rawInterestRateBps : 0;
+
+  if (effectiveInterestRateBps < 0 || effectiveInterestRateBps > 10_000) {
+    return { error: "Percentual de juros inválido (0% a 100%)." };
+  }
+
+  const interestCents = Math.round(
+    (baseTotalCents * effectiveInterestRateBps) / 10_000,
+  );
+
+  const totalCents = baseTotalCents + interestCents;
+
   try {
-    // Verificar se o caixa está fechado
     const now = new Date();
     const startOfDay = new Date(
       now.getFullYear(),
@@ -75,23 +95,30 @@ export async function completeSale(
       .limit(1);
 
     if (existingClosure) {
-      return { error: "O caixa do dia já foi fechado. Reabra o caixa para realizar novas vendas." };
+      return {
+        error:
+          "O caixa do dia já foi fechado. Reabra o caixa para realizar novas vendas.",
+      };
     }
 
     // Validar estoque e obter IDs de inventory para decrementar
-    const updates: { inventoryId: string; quantity: number; currentQty: number }[] = [];
+    const updates: {
+      inventoryId: string;
+      quantity: number;
+      currentQty: number;
+    }[] = [];
 
     for (const item of items) {
       const inv = await db.query.inventory.findFirst({
         where: item.variantId
           ? and(
               eq(inventory.storeId, storeId),
-              eq(inventory.variantId, item.variantId)
+              eq(inventory.variantId, item.variantId),
             )
           : and(
               eq(inventory.storeId, storeId),
               eq(inventory.productId, item.productId),
-              isNull(inventory.variantId)
+              isNull(inventory.variantId),
             ),
       });
 
@@ -118,8 +145,8 @@ export async function completeSale(
       .where(
         and(
           eq(stores.id, storeId),
-          eq(stores.organizationId, session.organizationId)
-        )
+          eq(stores.organizationId, session.organizationId),
+        ),
       )
       .limit(1);
     if (!store) return { error: "Loja inválida." };
@@ -131,8 +158,8 @@ export async function completeSale(
         .where(
           and(
             eq(clients.id, clientId),
-            eq(clients.organizationId, session.organizationId)
-          )
+            eq(clients.organizationId, session.organizationId),
+          ),
         )
         .limit(1);
       if (!client) return { error: "Cliente inválido." };
@@ -159,7 +186,7 @@ export async function completeSale(
         variantId: i.variantId || null,
         quantity: i.quantity,
         unitPriceCents: i.unitPriceCents,
-      }))
+      })),
     );
 
     for (const u of updates) {
@@ -276,7 +303,9 @@ export async function getDailySales(storeId?: string | null) {
   const session = await getUserSession();
 
   if (!["owner", "manager"].includes(session.role)) {
-    return { error: "Apenas dono ou gerente podem visualizar as vendas do dia." };
+    return {
+      error: "Apenas dono ou gerente podem visualizar as vendas do dia.",
+    };
   }
 
   const effectiveStoreId = storeId || session.storeId;
@@ -289,7 +318,7 @@ export async function getDailySales(storeId?: string | null) {
   const now = new Date();
   const startOfDay = new Date(now);
   startOfDay.setHours(0, 0, 0, 0);
-  
+
   const endOfDay = new Date(now);
   endOfDay.setHours(23, 59, 59, 999);
 
@@ -341,13 +370,13 @@ export async function getDailySales(storeId?: string | null) {
       });
 
       const client = sale.clientId
-        ? await db.query.clients.findFirst({
+        ? (await db.query.clients.findFirst({
             where: eq(clients.id, sale.clientId),
             columns: {
               id: true,
               name: true,
             },
-          })
+          })) ?? null
         : null;
 
       const items = await db.query.saleItems.findMany({
@@ -364,7 +393,7 @@ export async function getDailySales(storeId?: string | null) {
 
       return {
         ...sale,
-        seller,
+        seller: seller ?? null,
         client,
         items,
       };

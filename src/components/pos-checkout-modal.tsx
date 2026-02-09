@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -56,20 +58,36 @@ export function PosCheckoutModal({
   cart,
   subtotal,
   onSuccess,
-}: PosCheckoutModalProps) {
+}: Readonly<PosCheckoutModalProps>) {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("pix");
   const [documentValue, setDocumentValue] = useState("");
   const [client, setClient] = useState<PosClient | null>(null);
   const [searching, setSearching] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [showClientModal, setShowClientModal] = useState(false);
+  const [hasInterest, setHasInterest] = useState(false);
+  const [interestPercent, setInterestPercent] = useState("");
 
-  const docDigits = documentValue.replace(/\D/g, "");
+  const normalizedInterest = interestPercent.trim().replaceAll(",", ".");
+  const parsedInterestPercent = Number(normalizedInterest);
+  const effectiveInterestPercent =
+    paymentMethod === "credit" && hasInterest && Number.isFinite(parsedInterestPercent)
+      ? Math.min(Math.max(parsedInterestPercent, 0), 100)
+      : 0;
+  // bps = percent * 100 (ex.: 3,5% => 350)
+  const interestRateBps = Math.round(effectiveInterestPercent * 100);
+  const interestCents =
+    paymentMethod === "credit" && hasInterest
+      ? Math.round((subtotal * interestRateBps) / 10_000)
+      : 0;
+  const totalWithInterestCents = subtotal + interestCents;
+
+  const docDigits = documentValue.replaceAll(/\D/g, "");
   const isDocValid = docDigits.length === 11 || docDigits.length === 14;
 
   const handleDocumentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const v = e.target.value;
-    const digits = v.replace(/\D/g, "");
+    const digits = v.replaceAll(/\D/g, "");
     setDocumentValue(
       digits.length <= 11 ? normalizeCpf(v) : normalizeCnpj(v)
     );
@@ -129,7 +147,8 @@ export function PosCheckoutModal({
         storeId,
         paymentMethod,
         items,
-        client?.id ?? null
+        client?.id ?? null,
+        interestRateBps,
       );
       if (result.error) {
         toast.error(result.error);
@@ -187,9 +206,31 @@ export function PosCheckoutModal({
                     {new Intl.NumberFormat("pt-BR", {
                       style: "currency",
                       currency: "BRL",
-                    }).format(subtotal / 100)}
+                    }).format(totalWithInterestCents / 100)}
                   </span>
                 </div>
+                {paymentMethod === "credit" && hasInterest && interestRateBps > 0 && (
+                  <div className="mt-2 text-xs text-slate-600 space-y-1">
+                    <div className="flex justify-between">
+                      <span>Subtotal</span>
+                      <span>
+                        {new Intl.NumberFormat("pt-BR", {
+                          style: "currency",
+                          currency: "BRL",
+                        }).format(subtotal / 100)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Juros ({effectiveInterestPercent.toFixed(2)}%)</span>
+                      <span>
+                        {new Intl.NumberFormat("pt-BR", {
+                          style: "currency",
+                          currency: "BRL",
+                        }).format(interestCents / 100)}
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div>
@@ -215,7 +256,13 @@ export function PosCheckoutModal({
                         name="payment"
                         value={opt.value}
                         checked={paymentMethod === opt.value}
-                        onChange={() => setPaymentMethod(opt.value)}
+                        onChange={() => {
+                          setPaymentMethod(opt.value);
+                          if (opt.value !== "credit") {
+                            setHasInterest(false);
+                            setInterestPercent("");
+                          }
+                        }}
                         className="sr-only"
                       />
                       <span className="text-sm font-medium">{opt.label}</span>
@@ -223,6 +270,46 @@ export function PosCheckoutModal({
                   ))}
                 </div>
               </div>
+
+              {paymentMethod === "credit" && (
+                <div className="rounded-lg border border-slate-200 bg-white p-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <Label htmlFor="pos-interest-switch">
+                      Tem juros no parcelado?
+                    </Label>
+                    <Switch
+                      id="pos-interest-switch"
+                      checked={hasInterest}
+                      onCheckedChange={(checked) => {
+                        setHasInterest(checked);
+                        if (!checked) setInterestPercent("");
+                      }}
+                    />
+                  </div>
+                  {hasInterest && (
+                    <div className="mt-3 flex items-center gap-2">
+                      <Label htmlFor="pos-interest-percent" className="text-slate-700">
+                        Juros (%)
+                      </Label>
+                      <Input
+                        id="pos-interest-percent"
+                        type="number"
+                        inputMode="decimal"
+                        step="0.01"
+                        min="0"
+                        max="100"
+                        placeholder="Ex.: 3.5"
+                        value={interestPercent}
+                        onChange={(e) => setInterestPercent(e.target.value)}
+                        className="w-32"
+                      />
+                      <span className="text-xs text-slate-500">
+                        (0% a 100%)
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
 
               <div>
                 <h4 className="text-sm font-semibold text-slate-700 mb-2">
