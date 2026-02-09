@@ -12,6 +12,7 @@ import {
   ChevronDown,
   Check,
   LayoutDashboard,
+  LockKeyholeOpen,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -238,6 +239,16 @@ export function POSInterface({
                 <span>{store.name}</span>
               )}
             </div>
+            {canSwitchStore && (
+              <Link
+                href="/dashboard/cash-closure"
+                className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-900 ml-2 px-2 py-1 rounded hover:bg-slate-100 transition-colors shrink-0"
+                title="Fechar caixa"
+              >
+                <LockKeyholeOpen className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Fechar Caixa</span>
+              </Link>
+            )}
             <Link
               href="/dashboard"
               className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-900 ml-2 px-2 py-1 rounded hover:bg-slate-100 transition-colors shrink-0"
