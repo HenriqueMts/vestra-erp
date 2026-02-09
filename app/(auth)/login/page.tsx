@@ -60,7 +60,7 @@ export default function LoginPage() {
         if (type === "invite") {
           router.replace("/update-password");
         } else {
-          router.replace("/dashboard");
+          router.replace("/pos");
         }
       })
       .catch(() => {
@@ -87,7 +87,7 @@ export default function LoginPage() {
         toast.success("Login realizado!", {
           description: "Acessando o sistema...",
         });
-        router.push("/dashboard");
+        router.push("/pos");
         setTimeout(() => setIsPending(false), 8000);
       } else {
         toast.error("Erro desconhecido", {

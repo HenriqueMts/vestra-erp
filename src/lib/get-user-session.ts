@@ -34,6 +34,7 @@ export async function getUserSession() {
 
   return {
     user,
+    profile,
     organizationId: member.organizationId,
     orgLogo: member.organization.logoUrl,
     orgName: member.organization.name,
