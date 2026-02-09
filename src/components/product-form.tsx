@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useForm, useFieldArray } from "react-hook-form";
+import { useForm, useFieldArray, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -78,7 +78,7 @@ export function ProductForm({
   }
 
   const form = useForm<SaveProductInput>({
-    resolver: zodResolver(saveProductSchema),
+    resolver: zodResolver(saveProductSchema) as Resolver<SaveProductInput>,
     defaultValues: {
       id: initialData?.id,
       name: initialData?.name || "",
