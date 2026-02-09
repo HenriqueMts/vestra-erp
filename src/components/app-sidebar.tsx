@@ -13,6 +13,7 @@ import {
   Settings,
   Users2,
   Package,
+  LineChart,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -97,6 +98,26 @@ export function AppSidebar({ user, logo }: Readonly<AppSidebarProps>) {
                 }
               />
               <span>Dashboard</span>
+            </Link>
+
+            <Link
+              href="/dashboard/sales"
+              onClick={closeMenu}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium text-sm transition-all ${
+                isActive("/dashboard/sales")
+                  ? "bg-slate-900 text-white shadow-md shadow-slate-900/20"
+                  : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+              }`}
+            >
+              <LineChart
+                size={18}
+                className={
+                  isActive("/dashboard/sales")
+                    ? "text-slate-200"
+                    : "text-slate-400"
+                }
+              />
+              <span>Resumo de Vendas</span>
             </Link>
 
             <Link

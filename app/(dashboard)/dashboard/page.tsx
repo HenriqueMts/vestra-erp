@@ -10,9 +10,10 @@ import { Users, UserPlus, TrendingUp, ArrowLeft } from "lucide-react";
 import { OverviewChart } from "./components/overview-chart";
 import { RecentClients } from "./components/recent-clients";
 import { RecentSales } from "./components/recent-sales";
+import { CloseCashButton } from "./components/close-cash-button";
 
 export default async function DashboardPage() {
-  const { organizationId, orgName } = await getUserSession();
+  const { organizationId, orgName, role, storeId } = await getUserSession();
 
   const [totalClientsResult] = await db
     .select({ count: sql<number>`count(*)` })
@@ -85,12 +86,17 @@ export default async function DashboardPage() {
             Visão geral da loja {orgName}
           </p>
         </div>
-        <Link href="/pos">
-          <Button variant="outline" className="gap-2">
-            <ArrowLeft size={16} />
-            Voltar ao PDV
-          </Button>
-        </Link>
+        <div className="flex items-center gap-3">
+          {["owner", "manager"].includes(role) && (
+            <CloseCashButton storeId={storeId} />
+          )}
+          <Link href="/pos">
+            <Button variant="outline" className="gap-2">
+              <ArrowLeft size={16} />
+              Voltar ao PDV
+            </Button>
+          </Link>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">

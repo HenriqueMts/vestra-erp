@@ -252,6 +252,27 @@ export const sales = pgTable("sales", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// ----------------------------------------------------------------------
+//  FECHAMENTO DE CAIXA
+// ----------------------------------------------------------------------
+export const cashClosures = pgTable("cash_closures", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  organizationId: uuid("organization_id")
+    .notNull()
+    .references(() => organizations.id, { onDelete: "cascade" }),
+  storeId: uuid("store_id")
+    .notNull()
+    .references(() => stores.id, { onDelete: "cascade" }),
+  closedBy: uuid("closed_by")
+    .notNull()
+    .references(() => profiles.id, { onDelete: "restrict" }),
+  totalCents: integer("total_cents").notNull(),
+  salesCount: integer("sales_count").notNull(),
+  periodStart: timestamp("period_start").notNull(),
+  periodEnd: timestamp("period_end").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const saleItems = pgTable("sale_items", {
   id: uuid("id").defaultRandom().primaryKey(),
   saleId: uuid("sale_id")
@@ -280,6 +301,7 @@ export const organizationRelations = relations(organizations, ({ many }) => ({
   colors: many(colors),
   sizes: many(sizes),
   sales: many(sales),
+  cashClosures: many(cashClosures),
 }));
 
 export const categoryRelations = relations(categories, ({ one, many }) => ({
@@ -368,6 +390,21 @@ export const salesRelations = relations(sales, ({ one, many }) => ({
     references: [profiles.id],
   }),
   items: many(saleItems),
+}));
+
+export const cashClosureRelations = relations(cashClosures, ({ one }) => ({
+  organization: one(organizations, {
+    fields: [cashClosures.organizationId],
+    references: [organizations.id],
+  }),
+  store: one(stores, {
+    fields: [cashClosures.storeId],
+    references: [stores.id],
+  }),
+  closedByUser: one(profiles, {
+    fields: [cashClosures.closedBy],
+    references: [profiles.id],
+  }),
 }));
 
 export const saleItemsRelations = relations(saleItems, ({ one }) => ({
