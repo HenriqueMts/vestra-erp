@@ -21,7 +21,10 @@ import {
   type PaymentMethod,
   type SaleReceiptData,
 } from "@/actions/sales";
-import { PosClientRegisterModal, type PosClient } from "./pos-client-register-modal";
+import {
+  PosClientRegisterModal,
+  type PosClient,
+} from "./pos-client-register-modal";
 import { normalizeCpf, normalizeCnpj } from "@/utils/mask";
 import { Loader2, UserPlus, UserCheck, Printer, X } from "lucide-react";
 import { Receipt } from "./recipt";
@@ -77,7 +80,9 @@ export function PosCheckoutModal({
   const normalizedInterest = interestPercent.trim().replaceAll(",", ".");
   const parsedInterestPercent = Number(normalizedInterest);
   const effectiveInterestPercent =
-    paymentMethod === "credit" && hasInterest && Number.isFinite(parsedInterestPercent)
+    paymentMethod === "credit" &&
+    hasInterest &&
+    Number.isFinite(parsedInterestPercent)
       ? Math.min(Math.max(parsedInterestPercent, 0), 100)
       : 0;
   // bps = percent * 100 (ex.: 3,5% => 350)
@@ -94,9 +99,7 @@ export function PosCheckoutModal({
   const handleDocumentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const v = e.target.value;
     const digits = v.replaceAll(/\D/g, "");
-    setDocumentValue(
-      digits.length <= 11 ? normalizeCpf(v) : normalizeCnpj(v)
-    );
+    setDocumentValue(digits.length <= 11 ? normalizeCpf(v) : normalizeCnpj(v));
     setClient(null);
   };
 
@@ -134,7 +137,7 @@ export function PosCheckoutModal({
     setDocumentValue(
       newClient.document.length <= 14
         ? normalizeCpf(newClient.document)
-        : normalizeCnpj(newClient.document)
+        : normalizeCnpj(newClient.document),
     );
     setShowClientModal(false);
     toast.success("Cliente cadastrado e vinculado à venda.");
@@ -193,7 +196,10 @@ export function PosCheckoutModal({
 
   return (
     <>
-      <Dialog open={open} onOpenChange={(isOpen) => !receiptData && onOpenChange(isOpen)}>
+      <Dialog
+        open={open}
+        onOpenChange={(isOpen) => !receiptData && onOpenChange(isOpen)}
+      >
         <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0">
           {receiptData ? (
             <>
@@ -241,218 +247,227 @@ export function PosCheckoutModal({
             </div>
           ) : (
             <>
-          <DialogHeader className="p-4 pb-0">
-            <DialogTitle>Finalizar compra</DialogTitle>
-          </DialogHeader>
+              <DialogHeader className="p-4 pb-0">
+                <DialogTitle>Finalizar compra</DialogTitle>
+              </DialogHeader>
 
-          <ScrollArea className="flex-1 max-h-[60vh] px-4">
-            <div className="space-y-4 pb-4">
-              <div>
-                <h4 className="text-sm font-semibold text-slate-700 mb-2">
-                  Resumo da venda
-                </h4>
-                <ul className="space-y-1.5 text-sm">
-                  {cart.map((item) => (
-                    <li
-                      key={item.cartId}
-                      className="flex justify-between gap-2 text-slate-600"
-                    >
-                      <span className="truncate">
-                        {item.quantity}x {item.name}
-                        {item.details !== "Padrão" && ` (${item.details})`}
-                      </span>
-                      <span className="shrink-0">
-                        {new Intl.NumberFormat("pt-BR", {
-                          style: "currency",
-                          currency: "BRL",
-                        }).format((item.price * item.quantity) / 100)}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-                <Separator className="my-3" />
-                <div className="flex justify-between font-bold text-slate-900">
-                  <span>Total</span>
-                  <span>
-                    {new Intl.NumberFormat("pt-BR", {
-                      style: "currency",
-                      currency: "BRL",
-                    }).format(totalWithInterestCents / 100)}
-                  </span>
-                </div>
-                {paymentMethod === "credit" && hasInterest && interestRateBps > 0 && (
-                  <div className="mt-2 text-xs text-slate-600 space-y-1">
-                    <div className="flex justify-between">
-                      <span>Subtotal</span>
+              <ScrollArea className="flex-1 max-h-[60vh] px-4">
+                <div className="space-y-4 pb-4">
+                  <div>
+                    <h4 className="text-sm font-semibold text-slate-700 mb-2">
+                      Resumo da venda
+                    </h4>
+                    <ul className="space-y-1.5 text-sm">
+                      {cart.map((item) => (
+                        <li
+                          key={item.cartId}
+                          className="flex justify-between gap-2 text-slate-600"
+                        >
+                          <span className="truncate">
+                            {item.quantity}x {item.name}
+                            {item.details !== "Padrão" && ` (${item.details})`}
+                          </span>
+                          <span className="shrink-0">
+                            {new Intl.NumberFormat("pt-BR", {
+                              style: "currency",
+                              currency: "BRL",
+                            }).format((item.price * item.quantity) / 100)}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                    <Separator className="my-3" />
+                    <div className="flex justify-between font-bold text-slate-900">
+                      <span>Total</span>
                       <span>
                         {new Intl.NumberFormat("pt-BR", {
                           style: "currency",
                           currency: "BRL",
-                        }).format(subtotal / 100)}
+                        }).format(totalWithInterestCents / 100)}
                       </span>
                     </div>
-                    <div className="flex justify-between">
-                      <span>Juros ({effectiveInterestPercent.toFixed(2)}%)</span>
-                      <span>
-                        {new Intl.NumberFormat("pt-BR", {
-                          style: "currency",
-                          currency: "BRL",
-                        }).format(interestCents / 100)}
-                      </span>
-                    </div>
+                    {paymentMethod === "credit" &&
+                      hasInterest &&
+                      interestRateBps > 0 && (
+                        <div className="mt-2 text-xs text-slate-600 space-y-1">
+                          <div className="flex justify-between">
+                            <span>Subtotal</span>
+                            <span>
+                              {new Intl.NumberFormat("pt-BR", {
+                                style: "currency",
+                                currency: "BRL",
+                              }).format(subtotal / 100)}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>
+                              Juros ({effectiveInterestPercent.toFixed(2)}%)
+                            </span>
+                            <span>
+                              {new Intl.NumberFormat("pt-BR", {
+                                style: "currency",
+                                currency: "BRL",
+                              }).format(interestCents / 100)}
+                            </span>
+                          </div>
+                        </div>
+                      )}
                   </div>
-                )}
-              </div>
 
-              <div>
-                <h4 className="text-sm font-semibold text-slate-700 mb-2">
-                  Forma de pagamento
-                </h4>
-                <div
-                  className="grid grid-cols-2 gap-2"
-                  role="radiogroup"
-                  aria-label="Forma de pagamento"
-                >
-                  {PAYMENT_OPTIONS.map((opt) => (
-                    <label
-                      key={opt.value}
-                      className={`flex items-center gap-2 rounded-lg border px-3 py-2.5 cursor-pointer transition-colors ${
-                        paymentMethod === opt.value
-                          ? "border-indigo-600 bg-indigo-50 text-indigo-900"
-                          : "border-slate-200 hover:bg-slate-50"
-                      }`}
+                  <div>
+                    <h4 className="text-sm font-semibold text-slate-700 mb-2">
+                      Forma de pagamento
+                    </h4>
+                    <div
+                      className="grid grid-cols-2 gap-2"
+                      role="radiogroup"
+                      aria-label="Forma de pagamento"
                     >
-                      <input
-                        type="radio"
-                        name="payment"
-                        value={opt.value}
-                        checked={paymentMethod === opt.value}
-                        onChange={() => {
-                          setPaymentMethod(opt.value);
-                          if (opt.value !== "credit") {
-                            setHasInterest(false);
-                            setInterestPercent("");
-                          }
-                        }}
-                        className="sr-only"
-                      />
-                      <span className="text-sm font-medium">{opt.label}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              {paymentMethod === "credit" && (
-                <div className="rounded-lg border border-slate-200 bg-white p-3">
-                  <div className="flex items-center justify-between gap-3">
-                    <Label htmlFor="pos-interest-switch">
-                      Tem juros no parcelado?
-                    </Label>
-                    <Switch
-                      id="pos-interest-switch"
-                      checked={hasInterest}
-                      onCheckedChange={(checked) => {
-                        setHasInterest(checked);
-                        if (!checked) setInterestPercent("");
-                      }}
-                    />
+                      {PAYMENT_OPTIONS.map((opt) => (
+                        <label
+                          key={opt.value}
+                          className={`flex items-center gap-2 rounded-lg border px-3 py-2.5 cursor-pointer transition-colors ${
+                            paymentMethod === opt.value
+                              ? "border-indigo-600 bg-indigo-50 text-indigo-900"
+                              : "border-slate-200 hover:bg-slate-50"
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name="payment"
+                            value={opt.value}
+                            checked={paymentMethod === opt.value}
+                            onChange={() => {
+                              setPaymentMethod(opt.value);
+                              if (opt.value !== "credit") {
+                                setHasInterest(false);
+                                setInterestPercent("");
+                              }
+                            }}
+                            className="sr-only"
+                          />
+                          <span className="text-sm font-medium">
+                            {opt.label}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
                   </div>
-                  {hasInterest && (
-                    <div className="mt-3 flex items-center gap-2">
-                      <Label htmlFor="pos-interest-percent" className="text-slate-700">
-                        Juros (%)
-                      </Label>
-                      <Input
-                        id="pos-interest-percent"
-                        type="number"
-                        inputMode="decimal"
-                        step="0.01"
-                        min="0"
-                        max="100"
-                        placeholder="Ex.: 3.5"
-                        value={interestPercent}
-                        onChange={(e) => setInterestPercent(e.target.value)}
-                        className="w-32"
-                      />
-                      <span className="text-xs text-slate-500">
-                        (0% a 100%)
-                      </span>
+
+                  {paymentMethod === "credit" && (
+                    <div className="rounded-lg border border-slate-200 bg-white p-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <Label htmlFor="pos-interest-switch">
+                          Tem juros no parcelado?
+                        </Label>
+                        <Switch
+                          id="pos-interest-switch"
+                          checked={hasInterest}
+                          onCheckedChange={(checked) => {
+                            setHasInterest(checked);
+                            if (!checked) setInterestPercent("");
+                          }}
+                        />
+                      </div>
+                      {hasInterest && (
+                        <div className="mt-3 flex items-center gap-2">
+                          <Label
+                            htmlFor="pos-interest-percent"
+                            className="text-slate-700"
+                          >
+                            Juros (%)
+                          </Label>
+                          <Input
+                            id="pos-interest-percent"
+                            type="number"
+                            inputMode="decimal"
+                            step="0.01"
+                            min="0"
+                            max="100"
+                            placeholder="Ex.: 3.5"
+                            value={interestPercent}
+                            onChange={(e) => setInterestPercent(e.target.value)}
+                            className="w-32"
+                          />
+                          <span className="text-xs text-slate-500">
+                            (0% a 100%)
+                          </span>
+                        </div>
+                      )}
                     </div>
                   )}
-                </div>
-              )}
 
-              <div>
-                <h4 className="text-sm font-semibold text-slate-700 mb-2">
-                  Cliente (CPF/CNPJ) — obrigatório
-                </h4>
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="000.000.000-00 ou CNPJ"
-                    value={documentValue}
-                    onChange={handleDocumentChange}
-                    className="flex-1"
-                    maxLength={18}
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={handleSearchClient}
-                    disabled={searching || !documentValue.trim()}
-                  >
-                    {searching ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                  <div>
+                    <h4 className="text-sm font-semibold text-slate-700 mb-2">
+                      Cliente (CPF/CNPJ) — obrigatório
+                    </h4>
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="000.000.000-00 ou CNPJ"
+                        value={documentValue}
+                        onChange={handleDocumentChange}
+                        className="flex-1"
+                        maxLength={18}
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={handleSearchClient}
+                        disabled={searching || !documentValue.trim()}
+                      >
+                        {searching ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          "Buscar"
+                        )}
+                      </Button>
+                    </div>
+                    {client ? (
+                      <div className="mt-2 flex items-center gap-2 rounded-lg bg-green-50 border border-green-200 px-3 py-2 text-sm text-green-800">
+                        <UserCheck className="h-4 w-4 shrink-0" />
+                        <span className="font-medium">{client.name}</span>
+                      </div>
                     ) : (
-                      "Buscar"
+                      isDocValid &&
+                      documentValue.trim() && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="mt-2 gap-1"
+                          onClick={() => setShowClientModal(true)}
+                        >
+                          <UserPlus className="h-3.5 w-3.5" />
+                          Cadastrar cliente
+                        </Button>
+                      )
                     )}
-                  </Button>
-                </div>
-                {client ? (
-                  <div className="mt-2 flex items-center gap-2 rounded-lg bg-green-50 border border-green-200 px-3 py-2 text-sm text-green-800">
-                    <UserCheck className="h-4 w-4 shrink-0" />
-                    <span className="font-medium">{client.name}</span>
                   </div>
-                ) : (
-                  isDocValid &&
-                  documentValue.trim() && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="mt-2 gap-1"
-                      onClick={() => setShowClientModal(true)}
-                    >
-                      <UserPlus className="h-3.5 w-3.5" />
-                      Cadastrar cliente
-                    </Button>
-                  )
-                )}
-              </div>
-            </div>
-          </ScrollArea>
+                </div>
+              </ScrollArea>
 
-          <div className="p-4 border-t bg-slate-50 space-y-2">
-            {!client && (
-              <p className="text-xs text-amber-600 text-center">
-                Busque ou cadastre um cliente para habilitar a venda.
-              </p>
-            )}
-            <Button
-              className="w-full bg-indigo-600 hover:bg-indigo-700 font-bold"
-              size="lg"
-              onClick={handleConfirmSale}
-              disabled={submitting || cart.length === 0 || !client}
-            >
-              {submitting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Processando...
-                </>
-              ) : (
-                "Confirmar venda"
-              )}
-            </Button>
-          </div>
+              <div className="p-4 border-t bg-slate-50 space-y-2">
+                {!client && (
+                  <p className="text-xs text-amber-600 text-center">
+                    Busque ou cadastre um cliente para habilitar a venda.
+                  </p>
+                )}
+                <Button
+                  className="w-full bg-indigo-600 hover:bg-indigo-700 font-bold space-y-3"
+                  size="lg"
+                  onClick={handleConfirmSale}
+                  disabled={submitting || cart.length === 0 || !client}
+                >
+                  {submitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Processando...
+                    </>
+                  ) : (
+                    "Confirmar venda"
+                  )}
+                </Button>
+              </div>
             </>
           )}
         </DialogContent>
