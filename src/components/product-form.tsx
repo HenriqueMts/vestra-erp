@@ -483,14 +483,11 @@ export function ProductForm({
                   </Button>
 
                   <CardContent className="p-3 sm:p-4 space-y-3 sm:space-y-4">
-                    {/* ⚠️ CORREÇÃO: Input Hidden para o ID da Variante */}
-                    {field.id && (
-                      <input
-                        type="hidden"
-                        {...form.register(`variants.${index}.id`)}
-                        value={field.id}
-                      />
-                    )}
+                    {/* ID da variante (só enviado quando existe; não usar field.id do useFieldArray) */}
+                    <input
+                      type="hidden"
+                      {...form.register(`variants.${index}.id`)}
+                    />
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 pr-8 sm:pr-10">
                       <FormField

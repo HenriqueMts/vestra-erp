@@ -157,7 +157,14 @@ export async function saveProduct(
       const variantSku = productSku ?? "";
 
       for (const variant of data.variants) {
-        let variantId: string | undefined = variant.id;
+        // Só usar variant.id se for um UUID válido (não o id interno do useFieldArray)
+        const rawId = variant.id;
+        const isUuid =
+          typeof rawId === "string" &&
+          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+            rawId,
+          );
+        let variantId: string | undefined = isUuid ? rawId : undefined;
 
         // Variantes usam o SKU do produto (pai); só cor e tamanho são por variante
         if (!isNewProduct && variantId) {
@@ -188,7 +195,7 @@ export async function saveProduct(
               storeId: inv.storeId,
               productId: productId!,
               variantId: variantId!,
-              quantity: inv.quantity,
+              quantity: Math.max(0, Number(inv.quantity) || 0),
               minStock: 5,
             })),
           );
@@ -319,34 +326,26 @@ export async function getStockOverview(): Promise<StockOverview | null> {
   const totalUnits =
     Number(productUnitsRow?.sum ?? 0) + Number(variantUnitsRow?.sum ?? 0);
 
-  const activeProducts = await db.query.products.findMany({
-    where: and(
-      eq(products.organizationId, organizationId),
-      eq(products.status, "active"),
-    ),
-    columns: { id: true },
-    with: {
-      inventory: { columns: { quantity: true } },
-      variants: {
-        with: { inventory: { columns: { quantity: true } } },
-      },
-    },
-  });
+  // Estoque baixo: soma por produto (inventory.productId inclui produto direto e variantes)
+  // e conta quantos produtos têm total <= 5 (inclui zero = esgotado)
+  const stockPerProduct = await db
+    .select({
+      productId: products.id,
+      total: sql<number>`coalesce(sum(${inventory.quantity}), 0)`,
+    })
+    .from(products)
+    .leftJoin(inventory, eq(inventory.productId, products.id))
+    .where(
+      and(
+        eq(products.organizationId, organizationId),
+        eq(products.status, "active"),
+      ),
+    )
+    .groupBy(products.id);
 
-  let lowStockCount = 0;
-  for (const p of activeProducts) {
-    const variantStock = p.variants.reduce(
-      (acc, v) =>
-        acc + v.inventory.reduce((s, inv) => s + (inv.quantity ?? 0), 0),
-      0,
-    );
-    const simpleStock = p.inventory.reduce(
-      (acc, inv) => acc + (inv.quantity ?? 0),
-      0,
-    );
-    const totalStock = p.variants.length > 0 ? variantStock : simpleStock;
-    if (totalStock <= LOW_STOCK_THRESHOLD) lowStockCount += 1;
-  }
+  const lowStockCount = stockPerProduct.filter(
+    (row) => Number(row.total) <= LOW_STOCK_THRESHOLD,
+  ).length;
 
   return {
     totalProducts: Number(totalProductsRow?.count ?? 0),

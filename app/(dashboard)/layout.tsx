@@ -1,5 +1,6 @@
 import { AppSidebar } from "@/components/app-sidebar";
 import { OrganizationLogo } from "@/components/organization-logo";
+import { UpdateNotesModal } from "@/components/update-notes-modal";
 import { getUserSession } from "@/lib/get-user-session";
 import { redirect } from "next/navigation";
 
@@ -39,7 +40,7 @@ export default async function DashboardLayout({
   return (
     <div className="flex min-h-screen w-full bg-slate-50">
       <AppSidebar user={userData} logo={<OrganizationLogo />} />
-
+      <UpdateNotesModal />
       <main className="flex-1 overflow-y-auto w-full">{children}</main>
     </div>
   );
