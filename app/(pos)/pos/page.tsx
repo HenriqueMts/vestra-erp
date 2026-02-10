@@ -6,6 +6,9 @@ import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { POSInterface } from "@/components/pos-interface";
 
+// Sempre usar loja do cookie e estoque atualizado (troca de loja + após venda)
+export const dynamic = "force-dynamic";
+
 export default async function POSPage() {
   const session = await getUserSession();
   if (!session) redirect("/login");
@@ -52,10 +55,17 @@ export default async function POSPage() {
   const serializedProducts = catalog
     .filter((p) => p.status === "active")
     .map((p) => {
-      const totalStock = p.variants.reduce((acc, v) => {
-        const stock = v.inventory[0]?.quantity || 0;
-        return acc + stock;
-      }, p.inventory[0]?.quantity || 0);
+      // Produto com variantes: soma só o estoque das variantes (já filtrado pela loja atual).
+      // Produto sem variantes: usa o estoque direto do produto.
+      const totalStock =
+        p.variants.length > 0
+          ? p.variants.reduce(
+              (acc, v) =>
+                acc +
+                v.inventory.reduce((s, inv) => s + (inv.quantity ?? 0), 0),
+              0,
+            )
+          : p.inventory.reduce((s, inv) => s + (inv.quantity ?? 0), 0);
       return {
         ...p,
         basePrice: Number(p.basePrice),

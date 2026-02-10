@@ -129,13 +129,15 @@ export default async function TeamPage() {
                     )}
                   </div>
 
-                  {/* Exibir Loja Vinculada */}
-                  {member.storeName && (
+                  {/* Loja real do funcionário (defaultStoreId), não matriz por padrão */}
+                  {member.storeName ? (
                     <div className="flex items-center gap-1.5 text-xs text-slate-500 mt-1">
                       <MapPin size={12} />
-                      <span className="truncate">{member.storeName}</span>
+                      <span className="truncate" title={member.storeName}>
+                        Loja: {member.storeName}
+                      </span>
                     </div>
-                  )}
+                  ) : null}
 
                   {/* Se for vendedor mas sem loja */}
                   {member.role === "seller" && !member.storeName && (

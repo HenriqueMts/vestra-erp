@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   Search,
@@ -13,12 +14,20 @@ import {
   Check,
   LayoutDashboard,
   LockKeyholeOpen,
+  RefreshCw,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+} from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import {
   DropdownMenu,
@@ -29,6 +38,15 @@ import {
 import { toast } from "sonner";
 import { selectStoreAction } from "@/actions/pos";
 import { PosCheckoutModal } from "@/components/pos-checkout-modal";
+import { registerExchangeOrReturn, registerReturnAddStock } from "@/actions/inventory";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 
 type Product = {
   id: string;
@@ -89,12 +107,26 @@ export function POSInterface({
   });
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
+  const [isExchangeReturnOpen, setIsExchangeReturnOpen] = useState(false);
+  const [exchangeType, setExchangeType] = useState<"exchange" | "return">("exchange");
+  const [exchangeLoading, setExchangeLoading] = useState(false);
+  // Devolução: um só produto (com estoque) que sai
+  const [exchangeProduct, setExchangeProduct] = useState<Product | null>(null);
+  const [exchangeVariantId, setExchangeVariantId] = useState<string | null>(null);
+  const [exchangeQty, setExchangeQty] = useState("");
+  // Troca: produto que o cliente devolve (qualquer) + produto que sai do estoque (com estoque)
+  const [exchangeProductIn, setExchangeProductIn] = useState<Product | null>(null);
+  const [exchangeVariantIdIn, setExchangeVariantIdIn] = useState<string | null>(null);
+  const [exchangeProductOut, setExchangeProductOut] = useState<Product | null>(null);
+  const [exchangeVariantIdOut, setExchangeVariantIdOut] = useState<string | null>(null);
+  const [exchangeQtyOut, setExchangeQtyOut] = useState("");
 
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(
     null,
   );
+  const router = useRouter();
 
   const categories = useMemo(() => {
     const seen = new Map<string, string>();
@@ -197,161 +229,198 @@ export function POSInterface({
     0
   );
 
-  return (
-    <div className="flex flex-col lg:flex-row h-screen w-full bg-slate-50 overflow-hidden font-sans">
-      <div className="flex-1 flex flex-col min-w-0">
-        <header className="bg-white border-b px-3 sm:px-4 md:px-6 py-3 sm:py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 sticky top-0 z-10">
-          <div className="flex items-center gap-2 sm:gap-4 w-full sm:w-auto">
-            {organization?.logoUrl ? (
-              <img
-                src={organization.logoUrl}
-                alt="Logo"
-                className="h-6 sm:h-8 w-auto object-contain"
-              />
-            ) : (
-              <span className="text-lg sm:text-xl font-bold tracking-tight text-slate-900">
-                {organization?.name || "Vestra"}
-              </span>
-            )}
-            <div
-              className={`h-6 w-px bg-slate-200 mx-2 ${canSwitchStore ? "block" : "hidden sm:block"}`}
-            />
-            <div
-              className={`text-xs sm:text-sm text-slate-500 items-center gap-1 ${canSwitchStore ? "flex" : "hidden sm:flex"}`}
-            >
-              <span className="w-2 h-2 rounded-full bg-green-500 shrink-0" />
-              {canSwitchStore && availableStores.length > 1 ? (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-auto py-1 px-2 -mx-1 gap-1 font-normal text-slate-600 hover:text-slate-900 hover:bg-slate-100"
-                      aria-label="Trocar loja"
-                    >
-                      <Store className="h-3.5 w-3.5" />
-                      <span className="truncate max-w-[140px]">{store.name}</span>
-                      <ChevronDown className="h-3.5 w-3.5 shrink-0" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" className="min-w-[180px]">
-                    {availableStores.map((s) => (
-                      <DropdownMenuItem
-                        key={s.id}
-                        onSelect={() => selectStoreAction(s.id)}
-                        className="flex items-center gap-2"
-                      >
-                        {s.id === store.id ? (
-                          <Check className="h-4 w-4 shrink-0 text-green-600" />
-                        ) : (
-                          <span className="w-4" />
-                        )}
-                        <span className="truncate">{s.name}</span>
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              ) : (
-                <span>{store.name}</span>
-              )}
-            </div>
-            {canSwitchStore && (
-              <Link
-                href="/dashboard/cash-closure"
-                className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-900 ml-2 px-2 py-1 rounded hover:bg-slate-100 transition-colors shrink-0"
-                title="Fechar caixa"
-              >
-                <LockKeyholeOpen className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">Fechar Caixa</span>
-              </Link>
-            )}
-            <Link
-              href="/dashboard"
-              className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-900 ml-2 px-2 py-1 rounded hover:bg-slate-100 transition-colors shrink-0"
-              title="Acessar painel administrativo"
-            >
-              <LayoutDashboard className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Painel</span>
-            </Link>
-          </div>
+  const exchangeSubmitLabel = exchangeLoading
+    ? "Registrando…"
+    : exchangeType === "exchange"
+      ? "Registrar troca"
+      : "Registrar devolução";
 
-          <div className="w-full sm:flex-1 sm:max-w-lg sm:mx-4 order-3 sm:order-2 flex flex-col gap-2">
-            <div className="relative group">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 h-4 w-4 group-focus-within:text-slate-900" />
-              <Input
-                placeholder="O que você está procurando? (Nome ou código de barras)"
-                className="pl-10 pr-4 text-sm sm:text-base bg-slate-100 border-transparent focus:bg-white focus:border-slate-300 transition-all rounded-full w-full"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key !== "Enter") return;
-                  if (filteredProducts.length === 1) {
-                    e.preventDefault();
-                    const product = filteredProducts[0];
-                    const variant =
-                      product.variants?.length === 1
-                        ? product.variants[0]
-                        : undefined;
-                    addToCart(product, variant);
-                    setSearch("");
-                  }
-                }}
-              />
-            </div>
-            {categories.length > 0 && (
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+  return (
+    <div className="flex flex-col lg:flex-row h-screen w-full bg-slate-50 overflow-hidden font-sans min-h-0">
+      <div className="flex-1 flex flex-col min-w-0 min-h-0">
+        <header className="bg-white border-b shrink-0 sticky top-0 z-10">
+          <div className="px-2 py-2 sm:px-4 sm:py-3 md:px-6 md:py-4 flex flex-col gap-2 sm:gap-3">
+            {/* Linha 1: Logo, loja, ações e sacola */}
+            <div className="flex items-center justify-between gap-2 min-w-0 w-full">
+              <div className="flex items-center gap-1.5 sm:gap-3 min-w-0 flex-1">
+                {organization?.logoUrl ? (
+                  <img
+                    src={organization.logoUrl}
+                    alt="Logo"
+                    className="h-6 sm:h-8 w-auto object-contain shrink-0"
+                  />
+                ) : (
+                  <span className="text-base sm:text-xl font-bold tracking-tight text-slate-900 truncate">
+                    {organization?.name || "Vestra"}
+                  </span>
+                )}
+                <div
+                  className={`h-4 sm:h-6 w-px bg-slate-200 shrink-0 ${canSwitchStore ? "block" : "hidden sm:block"}`}
+                />
+                <div
+                  className={`text-xs text-slate-500 items-center gap-1 min-w-0 ${canSwitchStore ? "flex" : "hidden sm:flex"}`}
+                >
+                  <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-green-500 shrink-0" />
+                  {canSwitchStore && availableStores.length > 1 ? (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 sm:h-8 py-1 px-1.5 sm:px-2 gap-1 font-normal text-slate-600 hover:text-slate-900 hover:bg-slate-100 min-w-0 max-w-[120px] sm:max-w-[140px]"
+                          aria-label="Trocar loja"
+                        >
+                          <Store className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
+                          <span className="truncate">{store.name}</span>
+                          <ChevronDown className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="start" className="min-w-[180px]">
+                        {availableStores.map((s) => (
+                          <DropdownMenuItem
+                            key={s.id}
+                            onSelect={() => selectStoreAction(s.id)}
+                            className="flex items-center gap-2"
+                          >
+                            {s.id === store.id ? (
+                              <Check className="h-4 w-4 shrink-0 text-green-600" />
+                            ) : (
+                              <span className="w-4" />
+                            )}
+                            <span className="truncate">{s.name}</span>
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  ) : (
+                    <span className="truncate">{store.name}</span>
+                  )}
+                </div>
+                {canSwitchStore && (
+                  <Link
+                    href="/dashboard/cash-closure"
+                    className="flex items-center shrink-0 p-1.5 sm:px-2 sm:py-1 rounded hover:bg-slate-100 text-slate-500 hover:text-slate-900 transition-colors"
+                    title="Fechar caixa"
+                  >
+                    <LockKeyholeOpen className="h-3.5 w-3.5" />
+                    <span className="hidden sm:inline ml-1 text-xs">Fechar Caixa</span>
+                  </Link>
+                )}
+                <Link
+                  href="/dashboard"
+                  className="flex items-center shrink-0 p-1.5 sm:px-2 sm:py-1 rounded hover:bg-slate-100 text-slate-500 hover:text-slate-900 transition-colors"
+                  title="Painel"
+                >
+                  <LayoutDashboard className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline ml-1 text-xs">Painel</span>
+                </Link>
                 <Button
                   type="button"
-                  variant={selectedCategoryId === null ? "default" : "outline"}
+                  variant="ghost"
                   size="sm"
-                  className="shrink-0 rounded-full h-8 text-xs font-medium"
-                  onClick={() => setSelectedCategoryId(null)}
+                  className="shrink-0 p-1.5 sm:px-2 sm:py-1 text-slate-500 hover:text-slate-900 hover:bg-slate-100"
+                  onClick={() => {
+                    setIsExchangeReturnOpen(true);
+                    setExchangeType("exchange");
+                    setExchangeProduct(null);
+                    setExchangeVariantId(null);
+                    setExchangeQty("");
+                    setExchangeProductIn(null);
+                    setExchangeVariantIdIn(null);
+                    setExchangeProductOut(null);
+                    setExchangeVariantIdOut(null);
+                    setExchangeQtyOut("");
+                  }}
+                  title="Troca ou devolução"
                 >
-                  Todas
+                  <RefreshCw className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline ml-1 text-xs">Troca / Devolução</span>
                 </Button>
-                {categories.map((cat) => (
-                  <Button
-                    key={cat.id}
-                    type="button"
-                    variant={
-                      selectedCategoryId === cat.id ? "default" : "outline"
-                    }
-                    size="sm"
-                    className="shrink-0 rounded-full h-8 text-xs font-medium whitespace-nowrap"
-                    onClick={() => setSelectedCategoryId(cat.id)}
-                  >
-                    {cat.name}
-                  </Button>
-                ))}
               </div>
-            )}
-          </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="lg:hidden relative shrink-0 h-9 w-9 sm:h-10 sm:w-10"
+                onClick={() => setIsCartOpen(true)}
+                aria-label="Abrir sacola"
+              >
+                <ShoppingBag size={22} className="sm:w-6 sm:h-6" />
+                {cart.length > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 flex items-center justify-center bg-red-500 text-white text-[10px] font-bold rounded-full">
+                    {cart.reduce((acc, i) => acc + i.quantity, 0)}
+                  </span>
+                )}
+              </Button>
+            </div>
 
-          <Button
-            variant="ghost"
-            size="icon"
-            className="lg:hidden relative order-2 sm:order-3 shrink-0"
-            onClick={() => setIsCartOpen(true)}
-          >
-            <ShoppingBag size={20} className="sm:w-6 sm:h-6" />
-            {cart.length > 0 && (
-              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-            )}
-          </Button>
+            {/* Linha 2: Busca e categorias em coluna, sempre visíveis sem sobrepor */}
+            <div className="w-full min-w-0 flex flex-col gap-2">
+              <div className="relative w-full min-w-0">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 h-4 w-4" />
+                <Input
+                  placeholder="Buscar (nome ou código)"
+                  className="pl-9 pr-3 sm:pl-10 sm:pr-4 text-sm bg-slate-100 border-transparent focus:bg-white focus:border-slate-300 rounded-full w-full min-w-0"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key !== "Enter") return;
+                    if (filteredProducts.length === 1) {
+                      e.preventDefault();
+                      const product = filteredProducts[0];
+                      const variant =
+                        product.variants?.length === 1
+                          ? product.variants[0]
+                          : undefined;
+                      addToCart(product, variant);
+                      setSearch("");
+                    }
+                  }}
+                />
+              </div>
+              {categories.length > 0 && (
+                <div className="flex gap-1.5 overflow-x-auto pb-0.5 -mx-1 px-1 scroll-smooth [scrollbar-width:thin]">
+                  <Button
+                    type="button"
+                    variant={selectedCategoryId === null ? "default" : "outline"}
+                    size="sm"
+                    className="shrink-0 rounded-full h-7 sm:h-8 text-xs font-medium"
+                    onClick={() => setSelectedCategoryId(null)}
+                  >
+                    Todas
+                  </Button>
+                  {categories.map((cat) => (
+                    <Button
+                      key={cat.id}
+                      type="button"
+                      variant={
+                        selectedCategoryId === cat.id ? "default" : "outline"
+                      }
+                      size="sm"
+                      className="shrink-0 rounded-full h-7 sm:h-8 text-xs font-medium whitespace-nowrap"
+                      onClick={() => setSelectedCategoryId(cat.id)}
+                    >
+                      {cat.name}
+                    </Button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
         </header>
 
         {/* Grid de Produtos */}
-        <ScrollArea className="flex-1 p-3 sm:p-4 md:p-6">
-          <div className="mb-4 sm:mb-6">
-            <h2 className="text-xl sm:text-2xl font-bold text-slate-900">
-              Catálogo
-            </h2>
-            <p className="text-sm sm:text-base text-slate-500">
-              Selecione os itens para adicionar à venda.
-            </p>
-          </div>
+        <ScrollArea className="flex-1 min-h-0 overflow-auto">
+          <div className="p-2 sm:p-4 md:p-6 pb-24 lg:pb-6">
+            <div className="mb-3 sm:mb-6">
+              <h2 className="text-lg sm:text-2xl font-bold text-slate-900">
+                Catálogo
+              </h2>
+              <p className="text-xs sm:text-base text-slate-500 mt-0.5">
+                Selecione os itens para adicionar à venda.
+              </p>
+            </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 sm:gap-4 md:gap-6 pb-20">
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-2 sm:gap-4 md:gap-6">
             {filteredProducts.map((product) => (
               <div
                 key={product.id}
@@ -389,32 +458,62 @@ export function POSInterface({
                   )}
                 </div>
 
-                <div className="p-2 sm:p-3 md:p-4 flex flex-col flex-1">
-                  <div className="text-xs text-slate-500 mb-1">
+                <div className="p-2 sm:p-3 md:p-4 flex flex-col flex-1 min-w-0">
+                  <div className="text-[10px] sm:text-xs text-slate-500 mb-0.5 sm:mb-1 truncate">
                     {product.category?.name || "Geral"}
                   </div>
-                  <h3 className="font-semibold text-sm sm:text-base text-slate-900 line-clamp-1">
+                  <h3 className="font-semibold text-xs sm:text-base text-slate-900 line-clamp-2 sm:line-clamp-1 leading-tight">
                     {product.name}
                   </h3>
-                  <div className="mt-auto pt-2 flex items-center justify-between gap-2">
-                    <span className="font-bold text-base sm:text-lg">
+                  <div className="mt-auto pt-1.5 sm:pt-2 flex items-center justify-between gap-1 sm:gap-2">
+                    <span className="font-bold text-sm sm:text-lg truncate min-w-0">
                       {new Intl.NumberFormat("pt-BR", {
                         style: "currency",
                         currency: "BRL",
                       }).format(product.basePrice / 100)}
                     </span>
-                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-900 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity translate-y-2 group-hover:translate-y-0 duration-300 flex-shrink-0">
-                      <Plus size={14} className="sm:w-4 sm:h-4" />
+                    <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-slate-900 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity translate-y-2 group-hover:translate-y-0 duration-300 shrink-0">
+                      <Plus size={12} className="sm:w-4 sm:h-4" />
                     </div>
                   </div>
                 </div>
               </div>
             ))}
+            </div>
           </div>
         </ScrollArea>
+
+        {/* Barra fixa inferior em telas menores: sacola + finalizar */}
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 z-20 flex items-center gap-2 p-2 sm:p-3 bg-white border-t shadow-[0_-4px_12px_rgba(0,0,0,0.08)]">
+          <Button
+            type="button"
+            variant="outline"
+            className="flex-1 h-11 sm:h-12 gap-2 text-sm font-medium"
+            onClick={() => setIsCartOpen(true)}
+          >
+            <ShoppingBag className="h-5 w-5 shrink-0" />
+            <span>Sacola</span>
+            <span className="bg-slate-100 px-2 py-0.5 rounded-full text-xs font-bold">
+              {cart.reduce((acc, i) => acc + i.quantity, 0)} itens
+            </span>
+          </Button>
+          <Button
+            type="button"
+            className="flex-1 sm:flex-none sm:min-w-[140px] h-11 sm:h-12 bg-indigo-600 hover:bg-indigo-700 font-bold text-sm"
+            disabled={cart.length === 0}
+            onClick={() => {
+              if (cart.length > 0) {
+                setIsCartOpen(false);
+                setIsCheckoutOpen(true);
+              }
+            }}
+          >
+            Finalizar Compra
+          </Button>
+        </div>
       </div>
 
-      <div className="hidden lg:flex w-[380px] xl:w-[420px] bg-white border-l shadow-2xl z-20 flex-col h-full">
+      <div className="hidden lg:flex lg:w-[340px] xl:w-[380px] 2xl:w-[420px] bg-white border-l shadow-xl shrink-0 flex-col h-full min-h-0">
         <div className="p-4 sm:p-5 md:p-6 border-b flex items-center justify-between bg-white">
           <div className="min-w-0 flex-1">
             <h3 className="text-lg sm:text-xl font-bold text-slate-900">
@@ -429,9 +528,9 @@ export function POSInterface({
           </div>
         </div>
 
-        <ScrollArea className="flex-1 p-4 sm:p-5 md:p-6">
+        <ScrollArea className="flex-1 min-h-0 p-4 sm:p-5 md:p-6">
           {cart.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-slate-400 space-y-3 sm:space-y-4 px-4">
+            <div className="min-h-[200px] flex flex-col items-center justify-center text-slate-400 space-y-3 sm:space-y-4 px-4">
               <ShoppingBag
                 size={48}
                 className="sm:w-16 sm:h-16"
@@ -560,9 +659,367 @@ export function POSInterface({
         subtotal={subtotal}
         onSuccess={() => {
           setCart([]);
-          setIsCartOpen(false);
+          setIsCheckoutOpen(false);
+          router.refresh();
         }}
       />
+
+      <Dialog open={isExchangeReturnOpen} onOpenChange={setIsExchangeReturnOpen}>
+        <DialogContent className="bg-white max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Troca ou Devolução</DialogTitle>
+            <DialogDescription>
+              Loja: {store.name}. Troca: produto que o cliente devolve (qualquer) + produto que sai do estoque (com estoque). Devolução: qualquer produto — quantidade é adicionada ao estoque.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label>Motivo</Label>
+              <Select
+                value={exchangeType}
+                onValueChange={(v) => {
+                  setExchangeType(v as "exchange" | "return");
+                  setExchangeProduct(null);
+                  setExchangeVariantId(null);
+                  setExchangeQty("");
+                  setExchangeProductIn(null);
+                  setExchangeVariantIdIn(null);
+                  setExchangeProductOut(null);
+                  setExchangeVariantIdOut(null);
+                  setExchangeQtyOut("");
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="exchange">Troca</SelectItem>
+                  <SelectItem value="return">Devolução</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {exchangeType === "exchange" ? (
+              <>
+                <div className="space-y-2 rounded-lg border border-slate-200 bg-slate-50/50 p-3">
+                  <p className="text-xs font-medium text-slate-600">
+                    Produto que o cliente está devolvendo (qualquer)
+                  </p>
+                  <div className="grid gap-2">
+                    <Label className="text-slate-700">Produto</Label>
+                    <Select
+                      value={exchangeProductIn?.id ?? ""}
+                      onValueChange={(val) => {
+                        const p = products.find((x) => x.id === val) ?? null;
+                        setExchangeProductIn(p);
+                        setExchangeVariantIdIn(null);
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o produto" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {products.map((p) => (
+                          <SelectItem key={p.id} value={p.id}>
+                            {p.name}
+                            {p.totalStock > 0 ? ` (${p.totalStock} un)` : ""}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {exchangeProductIn && exchangeProductIn.variants.length > 0 && (
+                    <div className="grid gap-2">
+                      <Label className="text-slate-700">Variante</Label>
+                      <Select
+                        value={exchangeVariantIdIn ?? ""}
+                        onValueChange={(val) => setExchangeVariantIdIn(val || null)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione a variante" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {exchangeProductIn.variants.map((v) => {
+                            const qty = v.inventory.reduce(
+                              (s, i) => s + (i.quantity ?? 0),
+                              0,
+                            );
+                            return (
+                              <SelectItem key={v.id} value={v.id}>
+                                {v.size?.name ?? ""} {v.color?.name ?? ""}
+                                {qty > 0 ? ` (${qty} un)` : ""}
+                              </SelectItem>
+                            );
+                          })}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-2 rounded-lg border border-amber-200 bg-amber-50/50 p-3">
+                  <p className="text-xs font-medium text-amber-800">
+                    Produto que sai do estoque (o que o cliente leva)
+                  </p>
+                  <div className="grid gap-2">
+                    <Label className="text-slate-700">Produto</Label>
+                    <Select
+                      value={exchangeProductOut?.id ?? ""}
+                      onValueChange={(val) => {
+                        const p = products.find((x) => x.id === val) ?? null;
+                        setExchangeProductOut(p);
+                        setExchangeVariantIdOut(null);
+                        setExchangeQtyOut("");
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o produto com estoque" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {products
+                          .filter((p) => p.totalStock > 0)
+                          .map((p) => (
+                            <SelectItem key={p.id} value={p.id}>
+                              {p.name} ({p.totalStock} un)
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {exchangeProductOut && exchangeProductOut.variants.length > 0 && (
+                    <div className="grid gap-2">
+                      <Label className="text-slate-700">Variante</Label>
+                      <Select
+                        value={exchangeVariantIdOut ?? ""}
+                        onValueChange={(val) => {
+                          setExchangeVariantIdOut(val || null);
+                          setExchangeQtyOut("");
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione a variante" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {exchangeProductOut.variants.map((v) => {
+                            const qty = v.inventory.reduce(
+                              (s, i) => s + (i.quantity ?? 0),
+                              0,
+                            );
+                            if (qty <= 0) return null;
+                            return (
+                              <SelectItem key={v.id} value={v.id}>
+                                {v.size?.name ?? ""} {v.color?.name ?? ""} ({qty} un)
+                              </SelectItem>
+                            );
+                          })}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                  <div className="grid gap-2">
+                    <Label className="text-slate-700">
+                      Quantidade
+                      {exchangeProductOut &&
+                        (exchangeProductOut.variants.length > 0 && exchangeVariantIdOut
+                          ? ` (máx. ${
+                              exchangeProductOut.variants.find(
+                                (v) => v.id === exchangeVariantIdOut,
+                              )?.inventory.reduce((s, i) => s + (i.quantity ?? 0), 0) ?? 0
+                            })`
+                          : ` (máx. ${exchangeProductOut.totalStock})`)}
+                    </Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={
+                        exchangeProductOut
+                          ? exchangeProductOut.variants.length > 0 && exchangeVariantIdOut
+                            ? exchangeProductOut.variants.find(
+                                (v) => v.id === exchangeVariantIdOut,
+                              )?.inventory.reduce((s, i) => s + (i.quantity ?? 0), 0) ?? 0
+                            : exchangeProductOut.totalStock
+                          : 0
+                      }
+                      value={exchangeQtyOut}
+                      onChange={(e) => setExchangeQtyOut(e.target.value)}
+                      placeholder="0"
+                      disabled={
+                        !exchangeProductOut ||
+                        (exchangeProductOut.variants.length > 0 && !exchangeVariantIdOut)
+                      }
+                    />
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="space-y-2 rounded-lg border border-slate-200 bg-slate-50/50 p-3">
+                  <p className="text-xs font-medium text-slate-600">
+                    Produto que o cliente está devolvendo (qualquer produto — entrada no estoque)
+                  </p>
+                  <div className="grid gap-2">
+                    <Label className="text-slate-700">Produto</Label>
+                    <Select
+                      value={exchangeProduct?.id ?? ""}
+                      onValueChange={(val) => {
+                        const p = products.find((x) => x.id === val) ?? null;
+                        setExchangeProduct(p);
+                        setExchangeVariantId(null);
+                        setExchangeQty("");
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o produto" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {products.map((p) => (
+                          <SelectItem key={p.id} value={p.id}>
+                            {p.name}
+                            {p.totalStock > 0 ? ` (${p.totalStock} un)` : ""}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {exchangeProduct && exchangeProduct.variants.length > 0 && (
+                    <div className="grid gap-2">
+                      <Label className="text-slate-700">Variante</Label>
+                      <Select
+                        value={exchangeVariantId ?? ""}
+                        onValueChange={(val) => {
+                          setExchangeVariantId(val || null);
+                          setExchangeQty("");
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione a variante" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {exchangeProduct.variants.map((v) => {
+                            const qty = v.inventory.reduce(
+                              (s, i) => s + (i.quantity ?? 0),
+                              0,
+                            );
+                            return (
+                              <SelectItem key={v.id} value={v.id}>
+                                {v.size?.name ?? ""} {v.color?.name ?? ""}
+                                {qty > 0 ? ` (${qty} un)` : ""}
+                              </SelectItem>
+                            );
+                          })}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                  <div className="grid gap-2">
+                    <Label className="text-slate-700">Quantidade devolvida</Label>
+                    <Input
+                      type="number"
+                      min={1}
+                      value={exchangeQty}
+                      onChange={(e) => setExchangeQty(e.target.value)}
+                      placeholder="0"
+                      disabled={
+                        !exchangeProduct ||
+                        (exchangeProduct.variants.length > 0 && !exchangeVariantId)
+                      }
+                    />
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsExchangeReturnOpen(false)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              disabled={
+                exchangeLoading ||
+                (exchangeType === "exchange"
+                  ? !exchangeProductOut ||
+                    !exchangeQtyOut ||
+                    (exchangeProductOut?.variants.length
+                      ? !exchangeVariantIdOut
+                      : false) ||
+                    Number(exchangeQtyOut) < 1 ||
+                    Number(exchangeQtyOut) >
+                      (exchangeProductOut
+                        ? exchangeProductOut.variants.length > 0 && exchangeVariantIdOut
+                          ? exchangeProductOut.variants.find(
+                              (v) => v.id === exchangeVariantIdOut,
+                            )?.inventory.reduce((s, i) => s + (i.quantity ?? 0), 0) ?? 0
+                          : exchangeProductOut.totalStock
+                        : 0)
+                  : !exchangeProduct ||
+                    !exchangeQty ||
+                    (exchangeProduct?.variants.length ? !exchangeVariantId : false) ||
+                    Number(exchangeQty) < 1)
+              }
+              onClick={async () => {
+                if (exchangeType === "exchange") {
+                  if (!exchangeProductOut) return;
+                  const qty = Number(exchangeQtyOut);
+                  const maxQty =
+                    exchangeProductOut.variants.length > 0 && exchangeVariantIdOut
+                      ? exchangeProductOut.variants.find(
+                          (v) => v.id === exchangeVariantIdOut,
+                        )?.inventory.reduce((s, i) => s + (i.quantity ?? 0), 0) ?? 0
+                      : exchangeProductOut.totalStock;
+                  if (qty < 1 || qty > maxQty) return;
+                  setExchangeLoading(true);
+                  const result = await registerExchangeOrReturn(
+                    store.id,
+                    exchangeProductOut.id,
+                    exchangeVariantIdOut,
+                    qty,
+                    "exchange",
+                  );
+                  setExchangeLoading(false);
+                  if (result.error) {
+                    toast.error(result.error);
+                    return;
+                  }
+                  toast.success(result.message);
+                  setIsExchangeReturnOpen(false);
+                  setExchangeProductIn(null);
+                  setExchangeVariantIdIn(null);
+                  setExchangeProductOut(null);
+                  setExchangeVariantIdOut(null);
+                  setExchangeQtyOut("");
+                } else {
+                  if (!exchangeProduct) return;
+                  const qty = Number(exchangeQty);
+                  if (qty < 1) return;
+                  setExchangeLoading(true);
+                  const result = await registerReturnAddStock(
+                    store.id,
+                    exchangeProduct.id,
+                    exchangeVariantId,
+                    qty,
+                  );
+                  setExchangeLoading(false);
+                  if (result.error) {
+                    toast.error(result.error);
+                    return;
+                  }
+                  toast.success(result.message);
+                  setIsExchangeReturnOpen(false);
+                  setExchangeProduct(null);
+                  setExchangeVariantId(null);
+                  setExchangeQty("");
+                }
+                router.refresh();
+              }}
+            >
+              {exchangeSubmitLabel}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={isCartOpen} onOpenChange={setIsCartOpen}>
         <DialogContent className="lg:hidden max-w-full h-[90vh] m-0 rounded-t-2xl rounded-b-none p-0 flex flex-col">

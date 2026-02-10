@@ -106,43 +106,6 @@ export async function completeSale(
       };
     }
 
-    // Validar estoque e obter IDs de inventory para decrementar
-    const updates: {
-      inventoryId: string;
-      quantity: number;
-      currentQty: number;
-    }[] = [];
-
-    for (const item of items) {
-      const inv = await db.query.inventory.findFirst({
-        where: item.variantId
-          ? and(
-              eq(inventory.storeId, storeId),
-              eq(inventory.variantId, item.variantId),
-            )
-          : and(
-              eq(inventory.storeId, storeId),
-              eq(inventory.productId, item.productId),
-              isNull(inventory.variantId),
-            ),
-      });
-
-      if (!inv) {
-        return { error: `Estoque não encontrado para um dos itens.` };
-      }
-      const currentQty = inv.quantity ?? 0;
-      if (currentQty < item.quantity) {
-        return {
-          error: `Estoque insuficiente para "${item.productId}". Disponível: ${currentQty}, solicitado: ${item.quantity}.`,
-        };
-      }
-      updates.push({
-        inventoryId: inv.id,
-        quantity: item.quantity,
-        currentQty,
-      });
-    }
-
     // Validar loja e cliente (se informado)
     const [store] = await db
       .select()
@@ -170,42 +133,94 @@ export async function completeSale(
       if (!client) return { error: "Cliente inválido." };
     }
 
-    const [sale] = await db
-      .insert(sales)
-      .values({
-        organizationId: session.organizationId,
-        storeId,
-        clientId: clientId || null,
-        sellerId: session.user.id,
-        paymentMethod,
-        totalCents,
-      })
-      .returning({ id: sales.id });
+    let saleId: string | undefined;
 
-    if (!sale) return { error: "Erro ao criar venda." };
+    await db.transaction(async (tx) => {
+      // Buscar estoque com select explícito (por store + variantId ou productId sem variante)
+      const updates: { inventoryId: string; quantity: number }[] = [];
 
-    await db.insert(saleItems).values(
-      items.map((i) => ({
-        saleId: sale.id,
-        productId: i.productId,
-        variantId: i.variantId || null,
-        quantity: i.quantity,
-        unitPriceCents: i.unitPriceCents,
-      })),
-    );
+      for (const item of items) {
+        const whereCondition = item.variantId
+          ? and(
+              eq(inventory.storeId, storeId),
+              eq(inventory.variantId, item.variantId),
+            )
+          : and(
+              eq(inventory.storeId, storeId),
+              eq(inventory.productId, item.productId),
+              isNull(inventory.variantId),
+            );
 
-    for (const u of updates) {
-      await db
-        .update(inventory)
-        .set({ quantity: u.currentQty - u.quantity })
-        .where(eq(inventory.id, u.inventoryId));
-    }
+        const [inv] = await tx
+          .select({
+            id: inventory.id,
+            quantity: inventory.quantity,
+          })
+          .from(inventory)
+          .where(whereCondition)
+          .limit(1);
+
+        if (!inv) {
+          throw new Error("Estoque não encontrado para um dos itens.");
+        }
+        const currentQty = inv.quantity ?? 0;
+        if (currentQty < item.quantity) {
+          throw new Error(
+            `Estoque insuficiente. Disponível: ${currentQty}, solicitado: ${item.quantity}.`,
+          );
+        }
+        updates.push({
+          inventoryId: inv.id,
+          quantity: item.quantity,
+        });
+      }
+
+      const [sale] = await tx
+        .insert(sales)
+        .values({
+          organizationId: session.organizationId,
+          storeId,
+          clientId: clientId || null,
+          sellerId: session.user.id,
+          paymentMethod,
+          totalCents,
+        })
+        .returning({ id: sales.id });
+
+      if (!sale) throw new Error("Erro ao criar venda.");
+      saleId = sale.id;
+
+      await tx.insert(saleItems).values(
+        items.map((i) => ({
+          saleId: sale.id,
+          productId: i.productId,
+          variantId: i.variantId || null,
+          quantity: i.quantity,
+          unitPriceCents: i.unitPriceCents,
+        })),
+      );
+
+      // Decrementar estoque de forma atômica (evita condição de corrida)
+      for (const u of updates) {
+        await tx
+          .update(inventory)
+          .set({
+            quantity: sql`${inventory.quantity} - ${u.quantity}`,
+            updatedAt: new Date(),
+          })
+          .where(eq(inventory.id, u.inventoryId));
+      }
+    });
 
     revalidatePath("/pos");
-    return { success: true, saleId: sale.id, message: "Venda concluída!" };
+    revalidatePath("/inventory/products");
+    revalidatePath("/dashboard");
+    return { success: true, saleId: saleId!, message: "Venda concluída!" };
   } catch (err) {
     console.error("Erro ao finalizar venda:", err);
-    return { error: "Erro ao processar venda. Tente novamente." };
+    const message =
+      err instanceof Error ? err.message : "Erro ao processar venda. Tente novamente.";
+    return { error: message };
   }
 }
 

@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
-import { MoreHorizontal, Pencil, Trash2, Barcode } from "lucide-react";
+import { useState, useMemo } from "react";
+import { MoreHorizontal, Pencil, Trash2, Barcode, Truck } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,7 +19,15 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,6 +42,7 @@ import { toast } from "sonner";
 import { ProductForm } from "./product-form";
 import { deleteProduct } from "@/actions/products";
 import { BarcodeLabelPrintModal } from "./barcode-label-print-modal";
+import { transferStock } from "@/actions/inventory";
 import type { ProductOptions, ProductInitialData } from "@/types/product";
 
 interface ProductRowActionsProps {
@@ -76,6 +87,33 @@ export function ProductRowActions({
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isBarcodeOpen, setIsBarcodeOpen] = useState(false);
+  const [isTransferOpen, setIsTransferOpen] = useState(false);
+
+  const [transferFromStoreId, setTransferFromStoreId] = useState("");
+  const [transferToStoreId, setTransferToStoreId] = useState("");
+  const [transferVariantId, setTransferVariantId] = useState<string | null>(null);
+  const [transferQty, setTransferQty] = useState("");
+  const [transferLoading, setTransferLoading] = useState(false);
+
+  const hasVariants = variants.length > 0;
+
+  const getVariantLabel = (v: (typeof variants)[0]) => {
+    const colorName =
+      options.colors.find((c) => c.id === v.colorId)?.name ?? "";
+    const sizeName = options.sizes.find((s) => s.id === v.sizeId)?.name ?? "";
+    return [sizeName, colorName].filter(Boolean).join(" - ") || v.sku || "Variante";
+  };
+
+  const maxTransferQty = useMemo(() => {
+    if (!transferFromStoreId) return 0;
+    if (hasVariants && transferVariantId) {
+      const v = variants.find((x) => x.id === transferVariantId);
+      const inv = v?.inventory.find((i) => i.storeId === transferFromStoreId);
+      return inv?.quantity ?? 0;
+    }
+    const inv = inventory.find((i) => i.storeId === transferFromStoreId);
+    return inv?.quantity ?? 0;
+  }, [hasVariants, transferFromStoreId, transferVariantId, variants, inventory]);
 
   const handleDelete = async () => {
     const result = await deleteProduct(id, organizationId);
@@ -126,6 +164,18 @@ export function ProductRowActions({
           >
             <Barcode className="h-4 w-4" /> Imprimir etiqueta (cód. barras)
           </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() => {
+              setTransferFromStoreId("");
+              setTransferToStoreId("");
+              setTransferVariantId(null);
+              setTransferQty("");
+              setIsTransferOpen(true);
+            }}
+            className="cursor-pointer gap-2 text-slate-700 text-sm"
+          >
+            <Truck className="h-4 w-4" /> Transferir para outra loja
+          </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem
             onClick={() => setIsDeleteOpen(true)}
@@ -171,6 +221,175 @@ export function ProductRowActions({
         }))}
         options={options}
       />
+
+      <Dialog open={isTransferOpen} onOpenChange={setIsTransferOpen}>
+        <DialogContent className="bg-white max-w-md">
+          <DialogHeader>
+            <DialogTitle>Transferir para outra loja</DialogTitle>
+            <DialogDescription>
+              Escolha a quantidade e a loja de destino para {name}.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            {hasVariants && (
+              <div className="grid gap-2">
+                <Label>Variante</Label>
+                <Select
+                  value={transferVariantId ?? ""}
+                  onValueChange={(val) => {
+                    setTransferVariantId(val || null);
+                    setTransferFromStoreId("");
+                    setTransferToStoreId("");
+                    setTransferQty("");
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione a variante" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {variants.map((v) => {
+                      const total = v.inventory.reduce(
+                        (s, i) => s + (i.quantity ?? 0),
+                        0,
+                      );
+                      return (
+                        <SelectItem key={v.id} value={v.id}>
+                          {getVariantLabel(v)} ({total} un)
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            <div className="grid gap-2">
+              <Label>Loja de origem</Label>
+              <Select
+                value={transferFromStoreId}
+                onValueChange={(val) => {
+                  setTransferFromStoreId(val);
+                  setTransferToStoreId("");
+                  setTransferQty("");
+                }}
+                disabled={
+                  hasVariants && !transferVariantId
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione a loja de origem" />
+                </SelectTrigger>
+                <SelectContent>
+                  {hasVariants && transferVariantId
+                    ? variants
+                        .find((v) => v.id === transferVariantId)
+                        ?.inventory.filter((i) => (i.quantity ?? 0) > 0)
+                        .map((inv) => ({
+                          storeId: inv.storeId,
+                          quantity: inv.quantity ?? 0,
+                        }))
+                        .map(({ storeId, quantity }) => (
+                          <SelectItem key={storeId} value={storeId}>
+                            {options.stores.find((s) => s.id === storeId)?.name ??
+                              storeId}{" "}
+                            ({quantity} un)
+                          </SelectItem>
+                        )) ?? []
+                    : inventory
+                        .filter((i) => (i.quantity ?? 0) > 0)
+                        .map((inv) => (
+                          <SelectItem
+                            key={inv.storeId}
+                            value={inv.storeId}
+                          >
+                            {options.stores.find(
+                              (s) => s.id === inv.storeId,
+                            )?.name ?? inv.storeId}{" "}
+                            ({inv.quantity} un)
+                          </SelectItem>
+                        ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-2">
+              <Label>Loja de destino</Label>
+              <Select
+                value={transferToStoreId}
+                onValueChange={setTransferToStoreId}
+                disabled={!transferFromStoreId}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione a loja de destino" />
+                </SelectTrigger>
+                <SelectContent>
+                  {options.stores
+                    .filter((s) => s.id !== transferFromStoreId)
+                    .map((s) => (
+                      <SelectItem key={s.id} value={s.id}>
+                        {s.name}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-2">
+              <Label>Quantidade (máx. {maxTransferQty})</Label>
+              <Input
+                type="number"
+                min={1}
+                max={maxTransferQty}
+                value={transferQty}
+                onChange={(e) => setTransferQty(e.target.value)}
+                placeholder="0"
+                disabled={!transferFromStoreId || !transferToStoreId}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsTransferOpen(false)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              disabled={
+                transferLoading ||
+                !transferFromStoreId ||
+                !transferToStoreId ||
+                !transferQty ||
+                (hasVariants && !transferVariantId) ||
+                Number(transferQty) < 1 ||
+                Number(transferQty) > maxTransferQty
+              }
+              onClick={async () => {
+                const qty = Number(transferQty);
+                if (qty < 1 || qty > maxTransferQty) return;
+                setTransferLoading(true);
+                const result = await transferStock(
+                  id,
+                  transferVariantId,
+                  transferFromStoreId,
+                  transferToStoreId,
+                  qty,
+                );
+                setTransferLoading(false);
+                if (result.error) {
+                  toast.error(result.error);
+                  return;
+                }
+                toast.success(result.message);
+                setIsTransferOpen(false);
+                setTransferFromStoreId("");
+                setTransferToStoreId("");
+                setTransferVariantId(null);
+                setTransferQty("");
+              }}
+            >
+              {transferLoading ? "Transferindo…" : "Transferir"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
         <AlertDialogContent className="bg-white w-[90vw] sm:w-full max-w-md">

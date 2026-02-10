@@ -200,7 +200,7 @@ export function PosCheckoutModal({
         open={open}
         onOpenChange={(isOpen) => !receiptData && onOpenChange(isOpen)}
       >
-        <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0">
+        <DialogContent className="max-w-lg max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
           {receiptData ? (
             <>
               <DialogHeader className="p-4 pb-0">
@@ -241,7 +241,7 @@ export function PosCheckoutModal({
               </div>
             </>
           ) : loadingReceipt ? (
-            <div className="p-8 flex flex-col items-center justify-center gap-3">
+            <div className="p-8 flex flex-col items-center justify-center gap-3 ">
               <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
               <p className="text-sm text-slate-600">Gerando comprovante...</p>
             </div>
@@ -251,7 +251,7 @@ export function PosCheckoutModal({
                 <DialogTitle>Finalizar compra</DialogTitle>
               </DialogHeader>
 
-              <ScrollArea className="flex-1 max-h-[60vh] px-4">
+              <ScrollArea className="flex-1 min-h-0 px-4 overflow-y-auto">
                 <div className="space-y-4 pb-4">
                   <div>
                     <h4 className="text-sm font-semibold text-slate-700 mb-2">
@@ -446,14 +446,14 @@ export function PosCheckoutModal({
                 </div>
               </ScrollArea>
 
-              <div className="p-4 border-t bg-slate-50 space-y-2">
+              <div className="p-4 border-t bg-slate-50 space-y-2 shrink-0">
                 {!client && (
                   <p className="text-xs text-amber-600 text-center">
                     Busque ou cadastre um cliente para habilitar a venda.
                   </p>
                 )}
                 <Button
-                  className="w-full bg-indigo-600 hover:bg-indigo-700 font-bold space-y-3"
+                  className="w-full bg-indigo-600 hover:bg-indigo-700 font-bold py-6 px-4"
                   size="lg"
                   onClick={handleConfirmSale}
                   disabled={submitting || cart.length === 0 || !client}
