@@ -83,14 +83,17 @@ export async function createAsaasCustomer(organizationId: string) {
   });
   const email = owner?.email ?? session.user.email;
 
-  const body = {
+  const payload = {
     name: org.name,
     cpfCnpj: doc,
     email: email.trim(),
   };
 
   try {
-    const res = await asaasFetch("/customers", { method: "POST", body });
+    const res = await asaasFetch("/customers", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
     const data = (await res.json()) as { id?: string; errors?: Array<{ description: string }> };
 
     if (!res.ok) {

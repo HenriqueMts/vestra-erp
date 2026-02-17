@@ -323,6 +323,7 @@ export async function getInvoiceSettings() {
     settings: row
       ? {
           isActive: row.isActive,
+          providerToken: row.providerToken ?? "",
           environment: row.environment ?? "homologation",
           cscId: row.cscId ?? "",
           cscToken: row.cscToken ?? "",
@@ -346,8 +347,11 @@ export async function getInvoiceSettings() {
 /** Salva CSC (envia para Focus PUT /v2/empresas/{cnpj}) e/ou ativação. Certificado é salvo via uploadCertificate. */
 export type InvoiceSettingsInput = {
   isActive?: boolean;
+  providerToken?: string;
+  environment?: string;
   cscId?: string;
   cscToken?: string;
+  certificateId?: string;
   ie?: string;
   im?: string;
   regimeTributario?: string;
@@ -362,8 +366,11 @@ export type InvoiceSettingsInput = {
 
 type SettingsUpdates = Partial<{
   isActive: boolean;
+  providerToken: string | null;
+  environment: string | null;
   cscId: string | null;
   cscToken: string | null;
+  certificateId: string | null;
   ie: string | null;
   im: string | null;
   regimeTributario: string | null;
@@ -380,8 +387,11 @@ type SettingsUpdates = Partial<{
 function buildSettingsUpdates(data: InvoiceSettingsInput): SettingsUpdates {
   const updates: SettingsUpdates = { updatedAt: new Date() };
   if (data.isActive !== undefined) updates.isActive = data.isActive;
+  if (data.providerToken !== undefined) updates.providerToken = data.providerToken?.trim() || null;
+  if (data.environment !== undefined) updates.environment = data.environment?.trim() || null;
   if (data.cscId !== undefined) updates.cscId = data.cscId?.trim() || null;
   if (data.cscToken !== undefined) updates.cscToken = data.cscToken?.trim() || null;
+  if (data.certificateId !== undefined) updates.certificateId = data.certificateId?.trim() || null;
   if (data.ie !== undefined) updates.ie = data.ie?.trim() || null;
   if (data.im !== undefined) updates.im = data.im?.trim() || null;
   if (data.regimeTributario !== undefined) updates.regimeTributario = data.regimeTributario?.trim() || null;

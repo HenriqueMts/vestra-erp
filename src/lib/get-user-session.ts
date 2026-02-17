@@ -15,7 +15,7 @@ export async function getUserSession() {
   }
 
   // 1. Busca o perfil (troca de senha obrigatória, nome, etc.). Se a query falhar (ex.: coluna inexistente), segue sem perfil.
-  let profile: Awaited<ReturnType<typeof db.query.profiles.findFirst>> = null;
+  let profile: Awaited<ReturnType<typeof db.query.profiles.findFirst>> | null = null;
   try {
     profile = await db.query.profiles.findFirst({
       where: eq(profiles.id, user.id),
