@@ -15,10 +15,10 @@ export default async function CategoriesPage() {
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-8">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight text-slate-900">
+        <h1 className="text-3xl font-bold tracking-tight text-foreground">
           Categorias de Produto
         </h1>
-        <p className="text-slate-500 mt-1">
+        <p className="text-muted-foreground mt-1">
           Gerencie as categorias para organizar seus produtos (Camisa, Calça,
           Macacão, etc.).
         </p>

@@ -50,8 +50,15 @@ export async function inviteMember(data: InviteInput): Promise<ActionResponse> {
   }
 
   const originHeader = (await headers()).get("origin");
-  const baseUrl =
+  let baseUrl =
     process.env.NEXT_PUBLIC_APP_URL || originHeader || "http://localhost:3000";
+  // Garantir URL válida (ex.: https:/domain.com -> https://domain.com)
+  if (baseUrl.startsWith("https:/") && !baseUrl.startsWith("https://")) {
+    baseUrl = baseUrl.replace(/^https:\//, "https://");
+  }
+  if (baseUrl.startsWith("http:/") && !baseUrl.startsWith("http://")) {
+    baseUrl = baseUrl.replace(/^http:\//, "http://");
+  }
   try {
     const existing = await db.query.members.findFirst({
       where: and(
@@ -87,8 +94,12 @@ redirectTo: `${baseUrl}/login`,
         id: inviteData.user.id,
         name: data.name,
         email: data.email,
+        mustChangePassword: true,
       })
-      .onConflictDoNothing();
+      .onConflictDoUpdate({
+        target: profiles.id,
+        set: { mustChangePassword: true, name: data.name, email: data.email },
+      });
 
     await db.insert(members).values({
       organizationId,

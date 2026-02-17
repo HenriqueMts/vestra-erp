@@ -82,7 +82,7 @@ export function InviteModal({ stores }: InviteModalProps) {
         O Trigger envolve o botão. Assim o Radix cuida do ARIA e do foco.
       */}
       <DialogTrigger asChild>
-        <Button className="gap-2 bg-slate-900 text-white">
+        <Button className="gap-2 bg-primary text-primary-foreground">
           <UserPlus size={16} /> Convidar Membro
         </Button>
       </DialogTrigger>
@@ -194,7 +194,7 @@ export function InviteModal({ stores }: InviteModalProps) {
               </Button>
               <Button
                 type="submit"
-                className="bg-slate-900 text-white"
+                className="bg-primary text-primary-foreground"
                 disabled={loading}
               >
                 {loading ? "Enviando..." : "Enviar Convite"}

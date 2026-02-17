@@ -48,7 +48,7 @@ export function ProductPagination({
           />
         </PaginationItem>
 
-        <div className="mx-2 sm:mx-4 text-xs sm:text-sm text-slate-500 font-medium whitespace-nowrap">
+        <div className="mx-2 sm:mx-4 text-xs sm:text-sm text-muted-foreground font-medium whitespace-nowrap">
           {currentPage} de {totalPages}
         </div>
 

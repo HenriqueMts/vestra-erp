@@ -15,6 +15,8 @@ interface ReceiptProps {
   total: number;
   date: Date;
   orderId: string;
+  /** URL do DANFE quando a venda teve NFC-e emitida */
+  invoiceUrl?: string | null;
 }
 
 export const Receipt = forwardRef<HTMLDivElement, ReceiptProps>(
@@ -59,9 +61,23 @@ export const Receipt = forwardRef<HTMLDivElement, ReceiptProps>(
           <span>R$ {props.total.toFixed(2)}</span>
         </div>
 
+        {/* Link NFC-e quando emitida */}
+        {props.invoiceUrl && (
+          <div className="mb-2 border-b border-black pb-2 border-dashed text-center">
+            <a
+              href={props.invoiceUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[9px] underline font-semibold text-blue-700 print:text-black"
+            >
+              Ver Nota Fiscal (NFC-e)
+            </a>
+          </div>
+        )}
+
         {/* Rodapé */}
         <div className="text-center text-[9px] space-y-1 print:break-inside-avoid">
-          <p>*** COMPROVANTE NÃO FISCAL ***</p>
+          <p>{props.invoiceUrl ? "*** COMPROVANTE FISCAL ***" : "*** COMPROVANTE NÃO FISCAL ***"}</p>
           <p>Obrigado pela preferência!</p>
           <p>Sistema Vestra</p>
           <div className="flex justify-center mt-2 overflow-hidden [&>svg]:max-w-full [&>svg]:min-w-0">

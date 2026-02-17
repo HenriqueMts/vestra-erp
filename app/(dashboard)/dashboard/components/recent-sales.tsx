@@ -15,9 +15,9 @@ interface RecentSalesProps {
 export function RecentSales({ sales }: Readonly<RecentSalesProps>) {
   if (sales.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50/50 p-8 text-center">
-        <Receipt className="mx-auto h-10 w-10 text-slate-400" />
-        <p className="mt-2 text-sm text-slate-500">Nenhuma venda registrada ainda.</p>
+      <div className="rounded-lg border border-dashed border-border bg-muted/50 p-8 text-center">
+        <Receipt className="mx-auto h-10 w-10 text-muted-foreground" />
+        <p className="mt-2 text-sm text-muted-foreground">Nenhuma venda registrada ainda.</p>
       </div>
     );
   }
@@ -40,27 +40,27 @@ export function RecentSales({ sales }: Readonly<RecentSalesProps>) {
       : "-";
 
   return (
-    <div className="space-y-3">
+    <div className="max-h-[280px] overflow-y-auto space-y-3 pr-1">
       {sales.map((sale) => (
         <div
           key={sale.id}
-          className="flex items-center justify-between rounded-lg border border-slate-100 bg-white p-3 transition-colors hover:bg-slate-50"
+          className="flex items-center justify-between rounded-lg border border-border bg-card p-3 transition-colors hover:bg-muted"
         >
           <div className="flex items-center gap-3 min-w-0">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-chart-2/10 text-chart-2">
               <Receipt size={16} />
             </div>
             <div className="min-w-0">
-              <p className="font-medium text-slate-900 truncate">
+              <p className="font-medium text-foreground truncate">
                 {sale.client?.name || "Cliente não informado"}
               </p>
-              <p className="flex items-center gap-1 text-xs text-slate-500">
+              <p className="flex items-center gap-1 text-xs text-muted-foreground">
                 <Store size={12} />
                 {sale.store?.name || "-"} • {formatDate(sale.createdAt)}
               </p>
             </div>
           </div>
-          <span className="font-semibold text-slate-900 shrink-0 ml-2">
+          <span className="font-semibold text-chart-2 shrink-0 ml-2">
             {formatCurrency(sale.totalCents)}
           </span>
         </div>

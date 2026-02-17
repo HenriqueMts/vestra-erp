@@ -14,10 +14,15 @@ export async function getUserSession() {
     redirect("/login");
   }
 
-  // 1. Busca o perfil para ver se a troca de senha é obrigatória
-  const profile = await db.query.profiles.findFirst({
-    where: eq(profiles.id, user.id),
-  });
+  // 1. Busca o perfil (troca de senha obrigatória, nome, etc.). Se a query falhar (ex.: coluna inexistente), segue sem perfil.
+  let profile: Awaited<ReturnType<typeof db.query.profiles.findFirst>> | null = null;
+  try {
+    profile = await db.query.profiles.findFirst({
+      where: eq(profiles.id, user.id),
+    });
+  } catch {
+    profile = null;
+  }
 
   // 2. Busca os dados da organização (Membro)
   const member = await db.query.members.findFirst({

@@ -51,24 +51,31 @@ export default async function DashboardPage() {
 
   const chartData = generateLast6MonthsData(allClientsDates);
 
-  const [totalSalesResult] = await db
-    .select({
-      total: sql<number>`coalesce(sum(${sales.totalCents}), 0)`,
-    })
-    .from(sales)
-    .where(eq(sales.organizationId, organizationId));
+  const canSeeSales =
+    role === "owner" || role === "manager";
+
+  const [totalSalesResult] = canSeeSales
+    ? await db
+        .select({
+          total: sql<number>`coalesce(sum(${sales.totalCents}), 0)`,
+        })
+        .from(sales)
+        .where(eq(sales.organizationId, organizationId))
+    : [{ total: 0 }];
 
   const totalSalesCents = Number(totalSalesResult?.total ?? 0);
 
-  const recentSalesData = await db.query.sales.findMany({
-    where: eq(sales.organizationId, organizationId),
-    orderBy: [desc(sales.createdAt)],
-    limit: 10,
-    with: {
-      store: { columns: { name: true } },
-      client: { columns: { name: true } },
-    },
-  });
+  const recentSalesData = canSeeSales
+    ? await db.query.sales.findMany({
+        where: eq(sales.organizationId, organizationId),
+        orderBy: [desc(sales.createdAt)],
+        limit: 5,
+        with: {
+          store: { columns: { name: true } },
+          client: { columns: { name: true } },
+        },
+      })
+    : [];
 
   const formatCurrency = (cents: number) =>
     new Intl.NumberFormat("pt-BR", {
@@ -82,10 +89,10 @@ export default async function DashboardPage() {
     <div className="w-full min-h-screen space-y-6 sm:space-y-8 p-4 sm:p-6 lg:p-8">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="space-y-2">
-          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-slate-900">
+          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-foreground">
             Dashboard
           </h2>
-          <p className="text-sm sm:text-base text-slate-600">
+          <p className="text-sm sm:text-base text-muted-foreground">
             Visão geral da loja {orgName}
           </p>
         </div>
@@ -108,13 +115,13 @@ export default async function DashboardPage() {
             <CardTitle className="text-xs sm:text-sm font-medium">
               Total de Clientes
             </CardTitle>
-            <Users className="h-4 w-4 sm:h-5 sm:w-5 text-slate-500" />
+            <Users className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl sm:text-3xl font-bold text-slate-900">
+            <div className="text-2xl sm:text-3xl font-bold text-foreground">
               {totalClients}
             </div>
-            <p className="text-xs sm:text-sm text-slate-600 mt-1">
+            <p className="text-xs sm:text-sm text-muted-foreground mt-1">
               Base ativa cadastrada
             </p>
           </CardContent>
@@ -125,91 +132,93 @@ export default async function DashboardPage() {
             <CardTitle className="text-xs sm:text-sm font-medium">
               Novos (30 dias)
             </CardTitle>
-            <UserPlus className="h-4 w-4 sm:h-5 sm:w-5 text-slate-500" />
+            <UserPlus className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl sm:text-3xl font-bold text-emerald-600">
+            <div className="text-2xl sm:text-3xl font-bold text-chart-2">
               +{newClients}
             </div>
-            <p className="text-xs sm:text-sm text-slate-600 mt-1">
+            <p className="text-xs sm:text-sm text-muted-foreground mt-1">
               Crescimento recente
             </p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-xs sm:text-sm font-medium">
-              Total de Vendas
-            </CardTitle>
-            <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-slate-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl sm:text-3xl font-bold text-emerald-600">
-              {formatCurrency(totalSalesCents)}
-            </div>
-            <p className="text-xs sm:text-sm text-slate-600 mt-1">
-              Somatório de todas as vendas
-            </p>
-          </CardContent>
-        </Card>
+        {canSeeSales && (
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+              <CardTitle className="text-xs sm:text-sm font-medium">
+                Total de Vendas
+              </CardTitle>
+              <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl sm:text-3xl font-bold text-chart-2">
+                {formatCurrency(totalSalesCents)}
+              </div>
+              <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+                Somatório de todas as vendas
+              </p>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {stockOverview && (
         <div>
-          <h3 className="text-lg font-semibold text-slate-900 mb-3">
+          <h3 className="text-lg font-semibold text-foreground mb-3">
             Panorama do Estoque
           </h3>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <Link href="/inventory/products">
-              <Card className="hover:bg-slate-50 transition-colors cursor-pointer h-full">
+              <Card className="hover:bg-muted/50 transition-colors cursor-pointer h-full">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
                   <CardTitle className="text-xs sm:text-sm font-medium">
                     Produtos ativos
                   </CardTitle>
-                  <Package className="h-4 w-4 sm:h-5 sm:w-5 text-slate-500" />
+                  <Package className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl sm:text-3xl font-bold text-slate-900">
+                  <div className="text-2xl sm:text-3xl font-bold text-foreground">
                     {stockOverview.totalProducts}
                   </div>
-                  <p className="text-xs sm:text-sm text-slate-600 mt-1">
+                  <p className="text-xs sm:text-sm text-muted-foreground mt-1">
                     No catálogo
                   </p>
                 </CardContent>
               </Card>
             </Link>
             <Link href="/inventory/products">
-              <Card className="hover:bg-slate-50 transition-colors cursor-pointer h-full">
+              <Card className="hover:bg-muted/50 transition-colors cursor-pointer h-full">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
                   <CardTitle className="text-xs sm:text-sm font-medium">
                     Unidades em estoque
                   </CardTitle>
-                  <Package className="h-4 w-4 sm:h-5 sm:w-5 text-slate-500" />
+                  <Package className="h-4 w-4 sm:h-5 sm:w-5 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl sm:text-3xl font-bold text-slate-900">
+                  <div className="text-2xl sm:text-3xl font-bold text-foreground">
                     {stockOverview.totalUnits.toLocaleString("pt-BR")}
                   </div>
-                  <p className="text-xs sm:text-sm text-slate-600 mt-1">
+                  <p className="text-xs sm:text-sm text-muted-foreground mt-1">
                     Total (todas as lojas)
                   </p>
                 </CardContent>
               </Card>
             </Link>
             <Link href="/inventory/products">
-              <Card className="hover:bg-slate-50 transition-colors cursor-pointer h-full">
+              <Card className="hover:bg-destructive/5 transition-colors cursor-pointer h-full border-destructive/20">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-                  <CardTitle className="text-xs sm:text-sm font-medium">
+                  <CardTitle className="text-xs sm:text-sm font-medium text-destructive">
                     Estoque baixo (≤5 un)
                   </CardTitle>
-                  <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-amber-500" />
+                  <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-destructive" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl sm:text-3xl font-bold text-amber-600">
+                  <div className="text-2xl sm:text-3xl font-bold text-destructive">
                     {stockOverview.lowStockCount}
                   </div>
-                  <p className="text-xs sm:text-sm text-slate-600 mt-1">
+                  <p className="text-xs sm:text-sm text-muted-foreground mt-1">
                     Produtos para repor
                   </p>
                 </CardContent>
@@ -233,27 +242,29 @@ export default async function DashboardPage() {
       </Card>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <Card className="shadow-sm">
-          <CardHeader className="pb-3 sm:pb-4">
-            <CardTitle className="text-lg sm:text-xl">
-              Vendas Recentes
-            </CardTitle>
-            <div className="text-xs sm:text-sm text-slate-600 mt-1">
-              Últimas vendas realizadas no PDV.
-            </div>
-          </CardHeader>
-          <CardContent className="p-4 sm:p-6">
-            <RecentSales sales={recentSalesData} />
-          </CardContent>
-        </Card>
+        {canSeeSales && (
+          <Card className="shadow-sm">
+            <CardHeader className="pb-3 sm:pb-4">
+              <CardTitle className="text-lg sm:text-xl">
+                Vendas Recentes
+              </CardTitle>
+              <div className="text-xs sm:text-sm text-muted-foreground mt-1">
+                Últimas vendas realizadas no PDV.
+              </div>
+            </CardHeader>
+            <CardContent className="p-4 sm:p-6">
+              <RecentSales sales={recentSalesData} />
+            </CardContent>
+          </Card>
+        )}
 
         <Card className="shadow-sm">
           <CardHeader className="pb-3 sm:pb-4">
             <CardTitle className="text-lg sm:text-xl">
               Clientes Recentes
             </CardTitle>
-            <div className="text-xs sm:text-sm text-slate-600 mt-1">
-              Últimos cadastros realizados na plataforma.
+            <div className="text-xs sm:text-sm text-muted-foreground mt-1">
+              Últimos clientes cadastrados na sua organização.
             </div>
           </CardHeader>
           <CardContent className="p-4 sm:p-6">

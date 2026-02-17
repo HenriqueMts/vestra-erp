@@ -173,7 +173,10 @@ export function PosCheckoutModal({
         const receiptResult = await getSaleForReceipt(result.saleId);
         setLoadingReceipt(false);
         if ("data" in receiptResult) {
-          setReceiptData(receiptResult.data);
+          setReceiptData({
+            ...receiptResult.data,
+            invoiceUrl: result.invoiceUrl ?? receiptResult.data.invoiceUrl,
+          });
         }
       } else {
         onOpenChange(false);
@@ -218,6 +221,7 @@ export function PosCheckoutModal({
                   total={receiptData.total}
                   date={receiptData.date}
                   orderId={receiptData.orderId}
+                  invoiceUrl={receiptData.invoiceUrl}
                 />
               </div>
               <div className="p-4 border-t bg-slate-50 flex gap-2">

@@ -92,7 +92,7 @@ const paymentMethodColors: Record<string, string> = {
   pix: "bg-blue-100 text-blue-700",
   credit: "bg-purple-100 text-purple-700",
   debit: "bg-green-100 text-green-700",
-  cash: "bg-emerald-100 text-emerald-700",
+  cash: "bg-chart-2/20 text-chart-2",
 };
 
 export function CashClosureClient({
@@ -166,10 +166,10 @@ export function CashClosureClient({
     <div className="w-full min-h-screen space-y-6 p-4 sm:p-6 lg:p-8">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="space-y-2">
-          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-slate-900">
+          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-foreground">
             Fechamento de Caixa
           </h2>
-          <p className="text-sm sm:text-base text-slate-600">
+          <p className="text-sm sm:text-base text-muted-foreground">
             Conferência de vendas do dia
           </p>
         </div>
@@ -209,13 +209,13 @@ export function CashClosureClient({
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
             <CardTitle className="text-sm font-medium">Total de Vendas</CardTitle>
-            <ShoppingBag className="h-5 w-5 text-slate-500" />
+            <ShoppingBag className="h-5 w-5 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl sm:text-3xl font-bold text-slate-900">
+            <div className="text-2xl sm:text-3xl font-bold text-foreground">
               {initialData.salesCount}
             </div>
-            <p className="text-xs sm:text-sm text-slate-600 mt-1">
+            <p className="text-xs sm:text-sm text-muted-foreground mt-1">
               Vendas realizadas hoje
             </p>
           </CardContent>
@@ -224,13 +224,13 @@ export function CashClosureClient({
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
             <CardTitle className="text-sm font-medium">Total Arrecadado</CardTitle>
-            <DollarSign className="h-5 w-5 text-emerald-500" />
+            <DollarSign className="h-5 w-5 text-chart-2" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl sm:text-3xl font-bold text-emerald-600">
+            <div className="text-2xl sm:text-3xl font-bold text-chart-2">
               {formatCurrency(initialData.totalCents)}
             </div>
-            <p className="text-xs sm:text-sm text-slate-600 mt-1">
+            <p className="text-xs sm:text-sm text-muted-foreground mt-1">
               Valor total do dia
             </p>
           </CardContent>
@@ -239,7 +239,7 @@ export function CashClosureClient({
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
             <CardTitle className="text-sm font-medium">Status</CardTitle>
-            <Calendar className="h-5 w-5 text-slate-500" />
+            <Calendar className="h-5 w-5 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl sm:text-3xl font-bold">
@@ -253,7 +253,7 @@ export function CashClosureClient({
                 </Badge>
               )}
             </div>
-            <p className="text-xs sm:text-sm text-slate-600 mt-1">
+            <p className="text-xs sm:text-sm text-muted-foreground mt-1">
               Status do caixa
             </p>
           </CardContent>
@@ -270,9 +270,9 @@ export function CashClosureClient({
         </CardHeader>
         <CardContent>
           {initialData.sales.length === 0 ? (
-            <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50/50 p-8 text-center">
-              <Receipt className="mx-auto h-10 w-10 text-slate-400" />
-              <p className="mt-2 text-sm text-slate-500">
+            <div className="rounded-lg border border-dashed border-border bg-muted/50 p-8 text-center">
+              <Receipt className="mx-auto h-10 w-10 text-muted-foreground" />
+              <p className="mt-2 text-sm text-muted-foreground">
                 Nenhuma venda registrada hoje.
               </p>
             </div>
@@ -298,7 +298,7 @@ export function CashClosureClient({
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          <User size={14} className="text-slate-400" />
+                          <User size={14} className="text-muted-foreground" />
                           <span className="font-medium">
                             {sale.seller?.name || "Não informado"}
                           </span>
@@ -306,14 +306,14 @@ export function CashClosureClient({
                       </TableCell>
                       <TableCell>
                         {sale.client?.name || (
-                          <span className="text-slate-400">Não informado</span>
+                          <span className="text-muted-foreground">Não informado</span>
                         )}
                       </TableCell>
                       <TableCell>
                         <Badge
                           className={
                             paymentMethodColors[sale.paymentMethod] ||
-                            "bg-slate-100 text-slate-700"
+                            "bg-muted text-foreground"
                           }
                         >
                           {paymentMethodLabels[sale.paymentMethod] || sale.paymentMethod}
@@ -322,12 +322,12 @@ export function CashClosureClient({
                       <TableCell>
                         <div className="flex flex-col gap-1">
                           {sale.items.slice(0, 2).map((item) => (
-                            <span key={item.id} className="text-xs text-slate-600">
+                            <span key={item.id} className="text-xs text-muted-foreground">
                               {item.quantity}x {item.product?.name || "Produto"}
                             </span>
                           ))}
                           {sale.items.length > 2 && (
-                            <span className="text-xs text-slate-400">
+                            <span className="text-xs text-muted-foreground">
                               +{sale.items.length - 2} mais
                             </span>
                           )}
@@ -336,7 +336,7 @@ export function CashClosureClient({
                       <TableCell className="font-semibold">
                         {formatCurrency(sale.totalCents)}
                       </TableCell>
-                      <TableCell className="text-sm text-slate-600">
+                      <TableCell className="text-sm text-muted-foreground">
                         {formatDate(sale.createdAt)}
                       </TableCell>
                     </TableRow>
