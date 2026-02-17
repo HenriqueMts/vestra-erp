@@ -71,16 +71,38 @@ export async function POST(request: NextRequest) {
       accessSuspendedAt = null;
       console.log(`[Asaas Webhook] Pagamento recebido para ${org.name} - Ativando acesso`);
     } else if (event === "PAYMENT_OVERDUE") {
-      // Pagamento vencido: suspende acesso imediatamente
-      // Para dar um período de graça, você pode usar "overdue" e suspender depois via cron
-      newBillingStatus = "suspended";
-      shouldUpdateSuspendedAt = true;
-      accessSuspendedAt = new Date();
-      console.log(`[Asaas Webhook] Pagamento vencido para ${org.name} - Suspendo acesso`);
+      // Pagamento vencido: verificar período de graça antes de suspender
+      // Cliente tem 3 dias para pagar o boleto + 5 dias de tolerância = 8 dias total
+      // Só suspende após 5 dias do vencimento (ou seja, 8 dias desde a data de vencimento)
       
-      // Alternativa: apenas marcar como overdue (sem suspender ainda)
-      // newBillingStatus = "overdue";
-      // shouldUpdateSuspendedAt = false;
+      if (payment.dueDate) {
+        const dueDate = new Date(payment.dueDate);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0); // Normalizar para comparar apenas datas
+        dueDate.setHours(0, 0, 0, 0);
+        
+        // Calcular dias desde o vencimento
+        const daysSinceDue = Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24));
+        
+        if (daysSinceDue >= 5) {
+          // Passaram 5 dias ou mais: suspender acesso
+          newBillingStatus = "suspended";
+          shouldUpdateSuspendedAt = true;
+          accessSuspendedAt = new Date();
+          console.log(`[Asaas Webhook] Pagamento vencido há ${daysSinceDue} dias para ${org.name} - Suspendo acesso`);
+        } else {
+          // Ainda dentro do período de graça: apenas marcar como overdue
+          newBillingStatus = "overdue";
+          shouldUpdateSuspendedAt = false;
+          console.log(`[Asaas Webhook] Pagamento vencido há ${daysSinceDue} dias para ${org.name} - Marcando como overdue (período de graça)`);
+        }
+      } else {
+        // Se não tiver dueDate, suspender imediatamente (fallback)
+        newBillingStatus = "suspended";
+        shouldUpdateSuspendedAt = true;
+        accessSuspendedAt = new Date();
+        console.log(`[Asaas Webhook] Pagamento vencido para ${org.name} (sem data) - Suspendo acesso`);
+      }
     }
 
     // 5. Atualizar organização se houver mudança de status

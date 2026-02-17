@@ -88,7 +88,18 @@ Quando um evento acontece no Asaas (pagamento recebido, vencido, etc.):
 3. **Vestra identifica a organização** pelo `customer` ID do evento
 4. **Vestra atualiza o status**:
    - `PAYMENT_RECEIVED` ou `PAYMENT_CONFIRMED` → `billingStatus = 'active'` (libera acesso)
-   - `PAYMENT_OVERDUE` → `billingStatus = 'overdue'` ou `'suspended'` (bloqueia acesso)
+   - `PAYMENT_OVERDUE` → Verifica período de graça:
+     - **Menos de 5 dias desde o vencimento:** `billingStatus = 'overdue'` (acesso mantido, apenas aviso)
+     - **5 dias ou mais desde o vencimento:** `billingStatus = 'suspended'` (bloqueia acesso)
+
+### Período de Graça
+
+O sistema aplica um **período de graça de 5 dias** após o vencimento do boleto:
+
+- **Dias 0-4 após vencimento:** Status `overdue` - Cliente ainda tem acesso, mas vê avisos
+- **Dia 5+ após vencimento:** Status `suspended` - Acesso bloqueado até regularizar pagamento
+
+**Total:** Cliente tem 3 dias para pagar o boleto (prazo normal) + 5 dias de tolerância = **8 dias totais** antes do bloqueio.
 
 ## Bloqueio de acesso
 
