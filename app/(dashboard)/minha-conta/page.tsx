@@ -71,6 +71,9 @@ export default async function MinhaContaPage() {
   const payments = paymentsResult?.payments ?? null;
   const paymentsError = paymentsResult?.error ?? null;
 
+  // Verificar se está bloqueado
+  const isBlocked = session.billingStatus === "suspended";
+
   return (
     <div className="w-full min-h-screen space-y-6 sm:space-y-8 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
       <div className="space-y-2">
@@ -81,6 +84,24 @@ export default async function MinhaContaPage() {
           Suas faturas e boletos do plano Vestra.
         </p>
       </div>
+
+      {isBlocked && (
+        <Card className="border-destructive bg-destructive/10">
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-start gap-3">
+              <div className="p-2 bg-destructive/20 rounded-lg">
+                <FileText className="text-destructive" size={20} />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-destructive mb-1">Acesso suspenso</h3>
+                <p className="text-sm text-destructive/90">
+                  Seu plano está suspenso por falta de pagamento. Regularize suas pendências abaixo para continuar usando o sistema.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader className="pb-3 sm:pb-4">

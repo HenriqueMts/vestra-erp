@@ -236,9 +236,9 @@ export function POSInterface({
       : "Registrar devolução";
 
   return (
-    <div className="flex flex-col lg:flex-row h-screen w-full bg-slate-50 overflow-hidden font-sans min-h-0">
+    <div className="flex flex-col lg:flex-row h-screen w-full bg-background overflow-hidden font-sans min-h-0">
       <div className="flex-1 flex flex-col min-w-0 min-h-0">
-        <header className="bg-white border-b shrink-0 sticky top-0 z-10">
+        <header className="bg-card border-b border-border shrink-0 sticky top-0 z-10">
           <div className="px-2 py-2 sm:px-4 sm:py-3 md:px-6 md:py-4 flex flex-col gap-2 sm:gap-3">
             {/* Linha 1: Logo, loja, ações e sacola */}
             <div className="flex items-center justify-between gap-2 min-w-0 w-full">
@@ -250,24 +250,24 @@ export function POSInterface({
                     className="h-6 sm:h-8 w-auto object-contain shrink-0"
                   />
                 ) : (
-                  <span className="text-base sm:text-xl font-bold tracking-tight text-slate-900 truncate">
+                  <span className="text-base sm:text-xl font-bold tracking-tight text-foreground truncate">
                     {organization?.name || "Vestra"}
                   </span>
                 )}
                 <div
-                  className={`h-4 sm:h-6 w-px bg-slate-200 shrink-0 ${canSwitchStore ? "block" : "hidden sm:block"}`}
+                  className={`h-4 sm:h-6 w-px bg-border shrink-0 ${canSwitchStore ? "block" : "hidden sm:block"}`}
                 />
                 <div
-                  className={`text-xs text-slate-500 items-center gap-1 min-w-0 ${canSwitchStore ? "flex" : "hidden sm:flex"}`}
+                  className={`text-xs text-muted-foreground items-center gap-1 min-w-0 ${canSwitchStore ? "flex" : "hidden sm:flex"}`}
                 >
-                  <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-green-500 shrink-0" />
+                  <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-primary shrink-0" />
                   {canSwitchStore && availableStores.length > 1 ? (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-7 sm:h-8 py-1 px-1.5 sm:px-2 gap-1 font-normal text-slate-600 hover:text-slate-900 hover:bg-slate-100 min-w-0 max-w-[120px] sm:max-w-[140px]"
+                          className="h-7 sm:h-8 py-1 px-1.5 sm:px-2 gap-1 font-normal text-muted-foreground hover:text-foreground hover:bg-muted min-w-0 max-w-[120px] sm:max-w-[140px]"
                           aria-label="Trocar loja"
                         >
                           <Store className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
@@ -283,7 +283,7 @@ export function POSInterface({
                             className="flex items-center gap-2"
                           >
                             {s.id === store.id ? (
-                              <Check className="h-4 w-4 shrink-0 text-green-600" />
+                              <Check className="h-4 w-4 shrink-0 text-primary" />
                             ) : (
                               <span className="w-4" />
                             )}
@@ -299,7 +299,7 @@ export function POSInterface({
                 {canSwitchStore && (
                   <Link
                     href="/dashboard/cash-closure"
-                    className="flex items-center shrink-0 p-1.5 sm:px-2 sm:py-1 rounded hover:bg-slate-100 text-slate-500 hover:text-slate-900 transition-colors"
+                    className="flex items-center shrink-0 p-1.5 sm:px-2 sm:py-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
                     title="Fechar caixa"
                   >
                     <LockKeyholeOpen className="h-3.5 w-3.5" />
@@ -308,7 +308,7 @@ export function POSInterface({
                 )}
                 <Link
                   href="/dashboard"
-                  className="flex items-center shrink-0 p-1.5 sm:px-2 sm:py-1 rounded hover:bg-slate-100 text-slate-500 hover:text-slate-900 transition-colors"
+                  className="flex items-center shrink-0 p-1.5 sm:px-2 sm:py-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
                   title="Painel"
                 >
                   <LayoutDashboard className="h-3.5 w-3.5" />
@@ -318,7 +318,7 @@ export function POSInterface({
                   type="button"
                   variant="ghost"
                   size="sm"
-                  className="shrink-0 p-1.5 sm:px-2 sm:py-1 text-slate-500 hover:text-slate-900 hover:bg-slate-100"
+                  className="shrink-0 p-1.5 sm:px-2 sm:py-1 text-muted-foreground hover:text-foreground hover:bg-muted"
                   onClick={() => {
                     setIsExchangeReturnOpen(true);
                     setExchangeType("exchange");
@@ -346,7 +346,7 @@ export function POSInterface({
               >
                 <ShoppingBag size={22} className="sm:w-6 sm:h-6" />
                 {cart.length > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 flex items-center justify-center bg-red-500 text-white text-[10px] font-bold rounded-full">
+                  <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 flex items-center justify-center bg-destructive text-destructive-foreground text-[10px] font-bold rounded-full">
                     {cart.reduce((acc, i) => acc + i.quantity, 0)}
                   </span>
                 )}
@@ -354,12 +354,12 @@ export function POSInterface({
             </div>
 
             {/* Linha 2: Busca e categorias em coluna, sempre visíveis sem sobrepor */}
-            <div className="w-full min-w-0 flex flex-col gap-2">
+              <div className="w-full min-w-0 flex flex-col gap-2">
               <div className="relative w-full min-w-0">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 h-4 w-4" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
                 <Input
                   placeholder="Buscar (nome ou código)"
-                  className="pl-9 pr-3 sm:pl-10 sm:pr-4 text-sm bg-slate-100 border-transparent focus:bg-white focus:border-slate-300 rounded-full w-full min-w-0"
+                  className="pl-9 pr-3 sm:pl-10 sm:pr-4 text-sm bg-muted border-transparent focus:bg-background focus:border-input rounded-full w-full min-w-0"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   onKeyDown={(e) => {
@@ -412,10 +412,10 @@ export function POSInterface({
         <ScrollArea className="flex-1 min-h-0 overflow-auto">
           <div className="p-2 sm:p-4 md:p-6 pb-24 lg:pb-6">
             <div className="mb-3 sm:mb-6">
-              <h2 className="text-lg sm:text-2xl font-bold text-slate-900">
+              <h2 className="text-lg sm:text-2xl font-bold text-foreground">
                 Catálogo
               </h2>
-              <p className="text-xs sm:text-base text-slate-500 mt-0.5">
+              <p className="text-xs sm:text-base text-muted-foreground mt-0.5">
                 Selecione os itens para adicionar à venda.
               </p>
             </div>
@@ -424,11 +424,11 @@ export function POSInterface({
             {filteredProducts.map((product) => (
               <div
                 key={product.id}
-                className="group bg-white rounded-xl border border-slate-100 shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col overflow-hidden"
+                className="group bg-card rounded-xl border border-border shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col overflow-hidden"
                 onClick={() => setSelectedProduct(product)}
               >
                 {/* Imagem do Produto */}
-                <div className="aspect-[3/4] bg-slate-100 relative overflow-hidden">
+                <div className="aspect-[3/4] bg-muted relative overflow-hidden">
                   {product.imageUrl ? (
                     <img
                       src={product.imageUrl}
@@ -436,13 +436,13 @@ export function POSInterface({
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-slate-300 font-bold text-4xl">
+                    <div className="w-full h-full flex items-center justify-center text-muted-foreground font-bold text-4xl">
                       {product.name[0]}
                     </div>
                   )}
 
                   {product.totalStock <= 5 && product.totalStock > 0 && (
-                    <Badge className="absolute top-1 left-1 sm:top-2 sm:left-2 bg-amber-500 text-white border-0 text-xs">
+                    <Badge className="absolute top-1 left-1 sm:top-2 sm:left-2 bg-amber-500 text-primary-foreground border-0 text-xs">
                       Restam {product.totalStock}
                     </Badge>
                   )}
@@ -459,20 +459,20 @@ export function POSInterface({
                 </div>
 
                 <div className="p-2 sm:p-3 md:p-4 flex flex-col flex-1 min-w-0">
-                  <div className="text-[10px] sm:text-xs text-slate-500 mb-0.5 sm:mb-1 truncate">
+                  <div className="text-[10px] sm:text-xs text-muted-foreground mb-0.5 sm:mb-1 truncate">
                     {product.category?.name || "Geral"}
                   </div>
-                  <h3 className="font-semibold text-xs sm:text-base text-slate-900 line-clamp-2 sm:line-clamp-1 leading-tight">
+                  <h3 className="font-semibold text-xs sm:text-base text-foreground line-clamp-2 sm:line-clamp-1 leading-tight">
                     {product.name}
                   </h3>
                   <div className="mt-auto pt-1.5 sm:pt-2 flex items-center justify-between gap-1 sm:gap-2">
-                    <span className="font-bold text-sm sm:text-lg truncate min-w-0">
+                    <span className="font-bold text-sm sm:text-lg truncate min-w-0 text-foreground">
                       {new Intl.NumberFormat("pt-BR", {
                         style: "currency",
                         currency: "BRL",
                       }).format(product.basePrice / 100)}
                     </span>
-                    <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-slate-900 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity translate-y-2 group-hover:translate-y-0 duration-300 shrink-0">
+                    <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity translate-y-2 group-hover:translate-y-0 duration-300 shrink-0">
                       <Plus size={12} className="sm:w-4 sm:h-4" />
                     </div>
                   </div>
@@ -493,7 +493,7 @@ export function POSInterface({
           >
             <ShoppingBag className="h-5 w-5 shrink-0" />
             <span>Sacola</span>
-            <span className="bg-slate-100 px-2 py-0.5 rounded-full text-xs font-bold">
+            <span className="bg-muted px-2 py-0.5 rounded-full text-xs font-bold text-foreground">
               {cart.reduce((acc, i) => acc + i.quantity, 0)} itens
             </span>
           </Button>
@@ -513,33 +513,33 @@ export function POSInterface({
         </div>
       </div>
 
-      <div className="hidden lg:flex lg:w-[340px] xl:w-[380px] 2xl:w-[420px] bg-white border-l shadow-xl shrink-0 flex-col h-full min-h-0">
-        <div className="p-4 sm:p-5 md:p-6 border-b flex items-center justify-between bg-white">
+      <div className="hidden lg:flex lg:w-[340px] xl:w-[380px] 2xl:w-[420px] bg-card border-l border-border shadow-xl shrink-0 flex-col h-full min-h-0">
+        <div className="p-4 sm:p-5 md:p-6 border-b border-border flex items-center justify-between bg-card">
           <div className="min-w-0 flex-1">
-            <h3 className="text-lg sm:text-xl font-bold text-slate-900">
+            <h3 className="text-lg sm:text-xl font-bold text-foreground">
               Sacola
             </h3>
-            <p className="text-xs sm:text-sm text-slate-500 truncate">
+            <p className="text-xs sm:text-sm text-muted-foreground truncate">
               ID da Venda: #{saleId}
             </p>
           </div>
-          <div className="bg-slate-100 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium flex-shrink-0 ml-2">
+          <div className="bg-muted px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium flex-shrink-0 ml-2 text-foreground">
             {cart.reduce((acc, i) => acc + i.quantity, 0)} itens
           </div>
         </div>
 
         <ScrollArea className="flex-1 min-h-0 p-4 sm:p-5 md:p-6">
           {cart.length === 0 ? (
-            <div className="min-h-[200px] flex flex-col items-center justify-center text-slate-400 space-y-3 sm:space-y-4 px-4">
+            <div className="min-h-[200px] flex flex-col items-center justify-center text-muted-foreground space-y-3 sm:space-y-4 px-4">
               <ShoppingBag
                 size={48}
                 className="sm:w-16 sm:h-16"
                 strokeWidth={1}
               />
-              <p className="text-base sm:text-lg font-medium text-slate-900 text-center">
+              <p className="text-base sm:text-lg font-medium text-foreground text-center">
                 Sua sacola está vazia
               </p>
-              <p className="text-center text-sm sm:text-base max-w-[200px]">
+              <p className="text-center text-sm sm:text-base max-w-[200px] text-muted-foreground">
                 Adicione produtos do catálogo para começar a venda.
               </p>
             </div>
@@ -547,7 +547,7 @@ export function POSInterface({
             <div className="space-y-4 sm:space-y-6">
               {cart.map((item) => (
                 <div key={item.cartId} className="flex gap-3 sm:gap-4">
-                  <div className="w-16 h-20 sm:w-20 sm:h-24 bg-slate-100 rounded-lg overflow-hidden flex-shrink-0 border border-slate-200">
+                  <div className="w-16 h-20 sm:w-20 sm:h-24 bg-muted rounded-lg overflow-hidden flex-shrink-0 border border-border">
                     {item.image && (
                       <img
                         src={item.image}
@@ -561,43 +561,43 @@ export function POSInterface({
                   <div className="flex-1 flex flex-col justify-between py-1 min-w-0">
                     <div className="min-w-0">
                       <div className="flex justify-between items-start gap-2">
-                        <h4 className="font-semibold text-sm sm:text-base text-slate-900 line-clamp-2 leading-tight flex-1 min-w-0">
+                        <h4 className="font-semibold text-sm sm:text-base text-foreground line-clamp-2 leading-tight flex-1 min-w-0">
                           {item.name}
                         </h4>
                         <button
                           onClick={() => removeFromCart(item.cartId)}
-                          className="text-slate-400 hover:text-red-500 flex-shrink-0"
+                          className="text-muted-foreground hover:text-destructive flex-shrink-0"
                           aria-label="Remover item"
                         >
                           <Trash2 size={14} className="sm:w-4 sm:h-4" />
                         </button>
                       </div>
-                      <p className="text-xs sm:text-sm text-slate-500 mt-1 truncate">
+                      <p className="text-xs sm:text-sm text-muted-foreground mt-1 truncate">
                         {item.details}
                       </p>
                     </div>
 
                     <div className="flex items-center justify-between mt-2 gap-2">
-                      <div className="flex items-center border border-slate-200 rounded-md">
+                      <div className="flex items-center border border-border rounded-md">
                         <button
-                          className="px-2 py-1 hover:bg-slate-50 text-slate-600"
+                          className="px-2 py-1 hover:bg-muted text-muted-foreground"
                           onClick={() => updateQuantity(item.cartId, -1)}
                           aria-label="Diminuir quantidade"
                         >
                           <Minus size={12} className="sm:w-3.5 sm:h-3.5" />
                         </button>
-                        <span className="w-6 sm:w-8 text-center text-xs sm:text-sm font-medium">
+                        <span className="w-6 sm:w-8 text-center text-xs sm:text-sm font-medium text-foreground">
                           {item.quantity}
                         </span>
                         <button
-                          className="px-2 py-1 hover:bg-slate-50 text-slate-600"
+                          className="px-2 py-1 hover:bg-muted text-muted-foreground"
                           onClick={() => updateQuantity(item.cartId, 1)}
                           aria-label="Aumentar quantidade"
                         >
                           <Plus size={12} className="sm:w-3.5 sm:h-3.5" />
                         </button>
                       </div>
-                      <div className="font-bold text-sm sm:text-base text-slate-900 flex-shrink-0">
+                      <div className="font-bold text-sm sm:text-base text-foreground flex-shrink-0">
                         {new Intl.NumberFormat("pt-BR", {
                           style: "currency",
                           currency: "BRL",
@@ -611,9 +611,9 @@ export function POSInterface({
           )}
         </ScrollArea>
 
-        <div className="p-4 sm:p-5 md:p-6 bg-slate-50 border-t space-y-3 sm:space-y-4">
+        <div className="p-4 sm:p-5 md:p-6 bg-muted/40 border-t border-border space-y-3 sm:space-y-4">
           <div className="space-y-2">
-            <div className="flex justify-between text-xs sm:text-sm text-slate-600">
+            <div className="flex justify-between text-xs sm:text-sm text-muted-foreground">
               <span>Subtotal</span>
               <span>
                 {new Intl.NumberFormat("pt-BR", {
@@ -622,12 +622,12 @@ export function POSInterface({
                 }).format(subtotal / 100)}
               </span>
             </div>
-            <div className="flex justify-between text-xs sm:text-sm text-slate-600">
+            <div className="flex justify-between text-xs sm:text-sm text-muted-foreground">
               <span>Descontos</span>
               <span>-</span>
             </div>
             <Separator />
-            <div className="flex justify-between text-base sm:text-lg font-bold text-slate-900 pt-2">
+            <div className="flex justify-between text-base sm:text-lg font-bold text-foreground pt-2">
               <span>Total</span>
               <span>
                 {new Intl.NumberFormat("pt-BR", {
@@ -640,7 +640,7 @@ export function POSInterface({
 
           <Button
             size="lg"
-            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold h-10 sm:h-12 text-sm sm:text-base shadow-lg shadow-indigo-200"
+            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold h-10 sm:h-12 text-sm sm:text-base shadow-lg shadow-primary/30"
             disabled={cart.length === 0}
             onClick={() => {
               setIsCheckoutOpen(true);
@@ -700,12 +700,12 @@ export function POSInterface({
 
             {exchangeType === "exchange" ? (
               <>
-                <div className="space-y-2 rounded-lg border border-slate-200 bg-slate-50/50 p-3">
-                  <p className="text-xs font-medium text-slate-600">
+                <div className="space-y-2 rounded-lg border border-border bg-muted/40 p-3">
+                  <p className="text-xs font-medium text-muted-foreground">
                     Produto que o cliente está devolvendo (qualquer)
                   </p>
                   <div className="grid gap-2">
-                    <Label className="text-slate-700">Produto</Label>
+                    <Label className="text-foreground">Produto</Label>
                     <Select
                       value={exchangeProductIn?.id ?? ""}
                       onValueChange={(val) => {
@@ -729,7 +729,7 @@ export function POSInterface({
                   </div>
                   {exchangeProductIn && exchangeProductIn.variants.length > 0 && (
                     <div className="grid gap-2">
-                      <Label className="text-slate-700">Variante</Label>
+                      <Label className="text-foreground">Variante</Label>
                       <Select
                         value={exchangeVariantIdIn ?? ""}
                         onValueChange={(val) => setExchangeVariantIdIn(val || null)}
@@ -757,11 +757,11 @@ export function POSInterface({
                 </div>
 
                 <div className="space-y-2 rounded-lg border border-amber-200 bg-amber-50/50 p-3">
-                  <p className="text-xs font-medium text-amber-800">
+                  <p className="text-xs font-medium text-foreground">
                     Produto que sai do estoque (o que o cliente leva)
                   </p>
                   <div className="grid gap-2">
-                    <Label className="text-slate-700">Produto</Label>
+                    <Label className="text-foreground">Produto</Label>
                     <Select
                       value={exchangeProductOut?.id ?? ""}
                       onValueChange={(val) => {
@@ -787,7 +787,7 @@ export function POSInterface({
                   </div>
                   {exchangeProductOut && exchangeProductOut.variants.length > 0 && (
                     <div className="grid gap-2">
-                      <Label className="text-slate-700">Variante</Label>
+                      <Label className="text-foreground">Variante</Label>
                       <Select
                         value={exchangeVariantIdOut ?? ""}
                         onValueChange={(val) => {
@@ -816,7 +816,7 @@ export function POSInterface({
                     </div>
                   )}
                   <div className="grid gap-2">
-                    <Label className="text-slate-700">
+                    <Label className="text-foreground">
                       Quantidade
                       {exchangeProductOut &&
                         (exchangeProductOut.variants.length > 0 && exchangeVariantIdOut
@@ -852,12 +852,12 @@ export function POSInterface({
               </>
             ) : (
               <>
-                <div className="space-y-2 rounded-lg border border-slate-200 bg-slate-50/50 p-3">
-                  <p className="text-xs font-medium text-slate-600">
+                <div className="space-y-2 rounded-lg border border-border bg-muted/40 p-3">
+                  <p className="text-xs font-medium text-muted-foreground">
                     Produto que o cliente está devolvendo (qualquer produto — entrada no estoque)
                   </p>
                   <div className="grid gap-2">
-                    <Label className="text-slate-700">Produto</Label>
+                    <Label className="text-foreground">Produto</Label>
                     <Select
                       value={exchangeProduct?.id ?? ""}
                       onValueChange={(val) => {
@@ -882,7 +882,7 @@ export function POSInterface({
                   </div>
                   {exchangeProduct && exchangeProduct.variants.length > 0 && (
                     <div className="grid gap-2">
-                      <Label className="text-slate-700">Variante</Label>
+                      <Label className="text-foreground">Variante</Label>
                       <Select
                         value={exchangeVariantId ?? ""}
                         onValueChange={(val) => {
@@ -911,7 +911,7 @@ export function POSInterface({
                     </div>
                   )}
                   <div className="grid gap-2">
-                    <Label className="text-slate-700">Quantidade devolvida</Label>
+                    <Label className="text-foreground">Quantidade devolvida</Label>
                     <Input
                       type="number"
                       min={1}
@@ -1022,32 +1022,32 @@ export function POSInterface({
 
       <Dialog open={isCartOpen} onOpenChange={setIsCartOpen}>
         <DialogContent className="lg:hidden max-w-full h-[90vh] m-0 rounded-t-2xl rounded-b-none p-0 flex flex-col">
-          <div className="p-4 sm:p-5 border-b flex items-center justify-between bg-white sticky top-0 z-10">
+          <div className="p-4 sm:p-5 border-b border-border flex items-center justify-between bg-card sticky top-0 z-10">
             <div className="min-w-0 flex-1">
-              <h3 className="text-lg sm:text-xl font-bold text-slate-900">
+              <h3 className="text-lg sm:text-xl font-bold text-foreground">
                 Sacola
               </h3>
-              <p className="text-xs sm:text-sm text-slate-500 truncate">
+              <p className="text-xs sm:text-sm text-muted-foreground truncate">
                 ID da Venda: #{saleId}
               </p>
             </div>
-            <div className="bg-slate-100 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium shrink-0 ml-2">
+            <div className="bg-muted px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium shrink-0 ml-2 text-foreground">
               {cart.reduce((acc, i) => acc + i.quantity, 0)} itens
             </div>
           </div>
 
           <ScrollArea className="flex-1 p-4 sm:p-5">
             {cart.length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center text-slate-400 space-y-3 sm:space-y-4 px-4">
+              <div className="h-full flex flex-col items-center justify-center text-muted-foreground space-y-3 sm:space-y-4 px-4">
                 <ShoppingBag
                   size={48}
                   className="sm:w-16 sm:h-16"
                   strokeWidth={1}
                 />
-                <p className="text-base sm:text-lg font-medium text-slate-900 text-center">
+                <p className="text-base sm:text-lg font-medium text-foreground text-center">
                   Sua sacola está vazia
                 </p>
-                <p className="text-center text-sm sm:text-base max-w-[200px]">
+                <p className="text-center text-sm sm:text-base max-w-[200px] text-muted-foreground">
                   Adicione produtos do catálogo para começar a venda.
                 </p>
               </div>
@@ -1055,7 +1055,7 @@ export function POSInterface({
               <div className="space-y-4 sm:space-y-6">
                 {cart.map((item) => (
                   <div key={item.cartId} className="flex gap-3 sm:gap-4">
-                    <div className="w-16 h-20 sm:w-20 sm:h-24 bg-slate-100 rounded-lg overflow-hidden shrink-0 border border-slate-200">
+                    <div className="w-16 h-20 sm:w-20 sm:h-24 bg-muted rounded-lg overflow-hidden shrink-0 border border-border">
                       {item.image && (
                         <img
                           src={item.image}
@@ -1067,42 +1067,42 @@ export function POSInterface({
                     <div className="flex-1 flex flex-col justify-between py-1 min-w-0">
                       <div className="min-w-0">
                         <div className="flex justify-between items-start gap-2">
-                          <h4 className="font-semibold text-sm sm:text-base text-slate-900 line-clamp-2 leading-tight flex-1 min-w-0">
+                          <h4 className="font-semibold text-sm sm:text-base text-foreground line-clamp-2 leading-tight flex-1 min-w-0">
                             {item.name}
                           </h4>
                           <button
                             onClick={() => removeFromCart(item.cartId)}
-                            className="text-slate-400 hover:text-red-500 shrink-0"
+                            className="text-muted-foreground hover:text-destructive shrink-0"
                             aria-label="Remover item"
                           >
                             <Trash2 size={14} className="sm:w-4 sm:h-4" />
                           </button>
                         </div>
-                        <p className="text-xs sm:text-sm text-slate-500 mt-1 truncate">
+                        <p className="text-xs sm:text-sm text-muted-foreground mt-1 truncate">
                           {item.details}
                         </p>
                       </div>
                       <div className="flex items-center justify-between mt-2 gap-2">
-                        <div className="flex items-center border border-slate-200 rounded-md">
+                        <div className="flex items-center border border-border rounded-md">
                           <button
-                            className="px-2 py-1 hover:bg-slate-50 text-slate-600"
+                            className="px-2 py-1 hover:bg-muted text-muted-foreground"
                             onClick={() => updateQuantity(item.cartId, -1)}
                             aria-label="Diminuir quantidade"
                           >
                             <Minus size={12} className="sm:w-3.5 sm:h-3.5" />
                           </button>
-                          <span className="w-6 sm:w-8 text-center text-xs sm:text-sm font-medium">
+                          <span className="w-6 sm:w-8 text-center text-xs sm:text-sm font-medium text-foreground">
                             {item.quantity}
                           </span>
                           <button
-                            className="px-2 py-1 hover:bg-slate-50 text-slate-600"
+                            className="px-2 py-1 hover:bg-muted text-muted-foreground"
                             onClick={() => updateQuantity(item.cartId, 1)}
                             aria-label="Aumentar quantidade"
                           >
                             <Plus size={12} className="sm:w-3.5 sm:h-3.5" />
                           </button>
                         </div>
-                        <div className="font-bold text-sm sm:text-base text-slate-900 shrink-0">
+                        <div className="font-bold text-sm sm:text-base text-foreground shrink-0">
                           {new Intl.NumberFormat("pt-BR", {
                             style: "currency",
                             currency: "BRL",
@@ -1116,9 +1116,9 @@ export function POSInterface({
             )}
           </ScrollArea>
 
-          <div className="p-4 sm:p-5 bg-slate-50 border-t space-y-3 sm:space-y-4">
+          <div className="p-4 sm:p-5 bg-muted/40 border-t border-border space-y-3 sm:space-y-4">
             <div className="space-y-2">
-              <div className="flex justify-between text-xs sm:text-sm text-slate-600">
+              <div className="flex justify-between text-xs sm:text-sm text-muted-foreground">
                 <span>Subtotal</span>
                 <span>
                   {new Intl.NumberFormat("pt-BR", {
@@ -1127,12 +1127,12 @@ export function POSInterface({
                   }).format(subtotal / 100)}
                 </span>
               </div>
-              <div className="flex justify-between text-xs sm:text-sm text-slate-600">
+              <div className="flex justify-between text-xs sm:text-sm text-muted-foreground">
                 <span>Descontos</span>
                 <span>-</span>
               </div>
               <Separator />
-              <div className="flex justify-between text-base sm:text-lg font-bold text-slate-900 pt-2">
+              <div className="flex justify-between text-base sm:text-lg font-bold text-foreground pt-2">
                 <span>Total</span>
                 <span>
                   {new Intl.NumberFormat("pt-BR", {
@@ -1144,7 +1144,7 @@ export function POSInterface({
             </div>
             <Button
               size="lg"
-              className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold h-10 sm:h-12 text-sm sm:text-base shadow-lg shadow-indigo-200"
+              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold h-10 sm:h-12 text-sm sm:text-base shadow-lg shadow-primary/30"
               disabled={cart.length === 0}
               onClick={() => {
                 setIsCartOpen(false);
@@ -1169,7 +1169,7 @@ export function POSInterface({
               </DialogTitle>
               <div className="flex flex-col md:flex-row h-full max-h-[85vh] sm:max-h-[90vh] overflow-hidden">
                 {/* Imagem Grande */}
-                <div className="w-full md:w-[55%] lg:w-[60%] bg-slate-100 flex-shrink-0 h-80 sm:h-96 md:h-full md:max-h-[90vh] flex items-center justify-center overflow-hidden">
+                <div className="w-full md:w-[55%] lg:w-[60%] bg-muted flex-shrink-0 h-80 sm:h-96 md:h-full md:max-h-[90vh] flex items-center justify-center overflow-hidden">
                   {selectedProduct.imageUrl && (
                     <img
                       src={selectedProduct.imageUrl}
@@ -1183,16 +1183,16 @@ export function POSInterface({
                 <div className="w-full md:w-[45%] lg:w-[40%] p-4 sm:p-5 md:p-6 lg:p-8 flex flex-col overflow-y-auto overflow-x-hidden">
                   <div className="space-y-3 sm:space-y-4">
                     <div>
-                      <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-slate-900 leading-tight">
+                      <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-foreground leading-tight">
                         {selectedProduct.name}
                       </h2>
                       {selectedProduct.sku && (
-                        <p className="text-slate-500 mt-1 text-xs sm:text-sm">
+                        <p className="text-muted-foreground mt-1 text-xs sm:text-sm">
                           {selectedProduct.sku}
                         </p>
                       )}
                     </div>
-                    <div className="text-xl sm:text-2xl font-bold text-indigo-600">
+                    <div className="text-xl sm:text-2xl font-bold text-primary">
                       {new Intl.NumberFormat("pt-BR", {
                         style: "currency",
                         currency: "BRL",
@@ -1206,7 +1206,7 @@ export function POSInterface({
                   {selectedProduct.variants.length > 0 ? (
                     <div className="space-y-4 sm:space-y-6">
                       <div className="space-y-2 sm:space-y-3">
-                        <label className="text-xs sm:text-sm font-medium text-slate-900">
+                        <label className="text-xs sm:text-sm font-medium text-foreground">
                           Opções Disponíveis
                         </label>
                         <div className="grid grid-cols-1 gap-2 sm:gap-3 min-w-0">
@@ -1229,15 +1229,15 @@ export function POSInterface({
                                     flex items-center justify-between gap-2 p-2 sm:p-3 rounded-lg border text-xs sm:text-sm transition-all w-full min-w-0
                                     ${
                                       stock === 0
-                                        ? "opacity-50 bg-slate-50 cursor-not-allowed"
-                                        : "hover:border-indigo-600 hover:bg-indigo-50 bg-white border-slate-200"
+                                        ? "opacity-50 bg-muted cursor-not-allowed"
+                                        : "hover:border-primary hover:bg-primary/10 bg-card border-border"
                                     }
                                   `}
                                 >
                                   <div className="flex items-center gap-2 min-w-0 flex-1">
                                     {variant.color?.hex && (
                                       <div
-                                        className="w-5 h-5 sm:w-6 sm:h-6 rounded-full border border-slate-200 flex-shrink-0"
+                                        className="w-5 h-5 sm:w-6 sm:h-6 rounded-full border border-border flex-shrink-0"
                                         style={{
                                           backgroundColor: variant.color.hex,
                                         }}
@@ -1245,12 +1245,12 @@ export function POSInterface({
                                       />
                                     )}
                                     <div className="flex flex-col items-start min-w-0 flex-1">
-                                      <span className="font-semibold text-slate-700 truncate w-full text-xs sm:text-sm">
+                                      <span className="font-semibold text-foreground truncate w-full text-xs sm:text-sm">
                                         {variant.size?.name}{" "}
                                         {variant.color?.name &&
                                           `- ${variant.color.name}`}
                                       </span>
-                                      <span className="text-xs text-slate-500 truncate w-full">
+                                      <span className="text-xs text-muted-foreground truncate w-full">
                                         SKU: {variant.sku}
                                       </span>
                                     </div>
@@ -1258,8 +1258,8 @@ export function POSInterface({
                                   <span
                                     className={`text-xs font-medium px-2 py-1 rounded-full flex-shrink-0 ${
                                       stock > 0
-                                        ? "bg-green-100 text-green-700"
-                                        : "bg-red-100 text-red-700"
+                                        ? "bg-green-100 text-foreground"
+                                        : "bg-red-100 text-foreground"
                                     }`}
                                   >
                                     {stock} un
@@ -1272,12 +1272,12 @@ export function POSInterface({
                     </div>
                   ) : (
                     <div className="py-3 sm:py-4">
-                      <p className="text-sm sm:text-base text-slate-600 mb-3 sm:mb-4">
+                      <p className="text-sm sm:text-base text-muted-foreground mb-3 sm:mb-4">
                         Produto único (sem variação).
                       </p>
                       <Button
                         size="lg"
-                        className="w-full bg-slate-900 hover:bg-slate-800 h-10 sm:h-12 text-sm sm:text-base"
+                        className="w-full bg-primary hover:bg-primary/90 h-10 sm:h-12 text-sm sm:text-base"
                         onClick={() => addToCart(selectedProduct)}
                         disabled={selectedProduct.totalStock === 0}
                       >

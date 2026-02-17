@@ -9,3 +9,5 @@ ALTER TABLE public.organizations ADD COLUMN IF NOT EXISTS asaas_customer_id text
 ALTER TABLE public.organizations ADD COLUMN IF NOT EXISTS asaas_subscription_id text;
 ALTER TABLE public.organizations ADD COLUMN IF NOT EXISTS plan_value_cents integer;
 ALTER TABLE public.organizations ADD COLUMN IF NOT EXISTS plan_billing_day integer;
+ALTER TABLE public.organizations ADD COLUMN IF NOT EXISTS billing_status text DEFAULT 'active';
+ALTER TABLE public.organizations ADD COLUMN IF NOT EXISTS access_suspended_at timestamp;

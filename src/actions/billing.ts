@@ -62,7 +62,11 @@ export async function createAsaasCustomer(organizationId: string) {
   if (!isPlatformAdmin(session.user.email)) {
     return { error: "Apenas o administrador da plataforma pode cadastrar clientes no Asaas." };
   }
-  if (!isAsaasConfigured()) return { error: "Asaas não configurado. Defina ASAAS_API_KEY no servidor." };
+  if (!isAsaasConfigured()) {
+    return { 
+      error: "Asaas não configurado. Verifique se ASAAS_API_KEY está no .env.local e reinicie o servidor Next.js." 
+    };
+  }
 
   const org = await db.query.organizations.findFirst({
     where: eq(organizations.id, organizationId),
@@ -92,12 +96,21 @@ export async function createAsaasCustomer(organizationId: string) {
   try {
     const res = await asaasFetch("/customers", {
       method: "POST",
-      body: JSON.stringify(payload),
+      body: payload,
     });
-    const data = (await res.json()) as { id?: string; errors?: Array<{ description: string }> };
+    
+    let data: { id?: string; errors?: Array<{ description: string }>; error?: string };
+    try {
+      data = (await res.json()) as typeof data;
+    } catch {
+      const text = await res.text();
+      console.error("Asaas response (not JSON):", text);
+      return { error: `Erro ao criar cliente no Asaas (${res.status}). Verifique a chave de API.` };
+    }
 
     if (!res.ok) {
-      const msg = data.errors?.[0]?.description ?? (typeof data === "object" && "error" in data ? String((data as { error: string }).error) : "Erro ao criar cliente no Asaas.");
+      const msg = data.errors?.[0]?.description ?? data.error ?? `Erro ao criar cliente no Asaas (${res.status}).`;
+      console.error("Asaas API error:", { status: res.status, data });
       return { error: msg };
     }
 
@@ -114,6 +127,120 @@ export async function createAsaasCustomer(organizationId: string) {
     return { success: true, asaasCustomerId: String(customerId) };
   } catch (err) {
     console.error("createAsaasCustomer:", err);
+    return { error: "Falha ao comunicar com o Asaas. Tente novamente." };
+  }
+}
+
+/** Retorna a próxima data de vencimento no formato YYYY-MM-DD (dia do mês entre 1 e 28). */
+function getNextDueDate(billingDay: number): string {
+  const day = Math.max(1, Math.min(28, Math.floor(billingDay)));
+  const now = new Date();
+  let next = new Date(now.getFullYear(), now.getMonth(), day);
+  if (next <= now) {
+    next = new Date(now.getFullYear(), now.getMonth() + 1, day);
+  }
+  return next.toISOString().slice(0, 10);
+}
+
+/** Cria ou atualiza a assinatura (plano) no Asaas para a organização. Valor em reais, dia 1–28. Apenas admin. */
+export async function createOrUpdateSubscription(
+  organizationId: string,
+  valueReais: number,
+  billingDay: number
+) {
+  const session = await getUserSession();
+  if (!session?.user?.email) return { error: "Não autorizado" };
+  if (!isPlatformAdmin(session.user.email)) {
+    return { error: "Apenas o administrador da plataforma pode definir planos." };
+  }
+  if (!isAsaasConfigured()) {
+    return { error: "Asaas não configurado. Defina ASAAS_API_KEY no servidor." };
+  }
+
+  const org = await db.query.organizations.findFirst({
+    where: eq(organizations.id, organizationId),
+    columns: { id: true, name: true, asaasCustomerId: true, asaasSubscriptionId: true },
+  });
+
+  if (!org) return { error: "Organização não encontrada." };
+  if (!org.asaasCustomerId) {
+    return { error: "Cadastre a organização no Asaas antes de definir o plano." };
+  }
+
+  const value = Math.max(0, Number(valueReais));
+  const day = Math.max(1, Math.min(28, Math.floor(billingDay)));
+  const valueCents = Math.round(value * 100);
+
+  if (value <= 0) return { error: "Informe um valor maior que zero." };
+
+  const nextDueDate = getNextDueDate(day);
+
+  try {
+    if (org.asaasSubscriptionId) {
+      // Atualizar assinatura existente
+      const res = await asaasFetch(`/subscriptions/${org.asaasSubscriptionId}`, {
+        method: "PUT",
+        body: {
+          value,
+          billingType: "BOLETO",
+          nextDueDate,
+          cycle: "MONTHLY",
+          description: `Vestra - ${org.name}`,
+          updatePendingPayments: true,
+        },
+      });
+      const data = (await res.json()) as { id?: string; errors?: Array<{ description: string }> };
+
+      if (!res.ok) {
+        const msg = data.errors?.[0]?.description ?? "Erro ao atualizar assinatura no Asaas.";
+        return { error: msg };
+      }
+
+      await db
+        .update(organizations)
+        .set({
+          planValueCents: valueCents,
+          planBillingDay: day,
+        })
+        .where(eq(organizations.id, organizationId));
+    } else {
+      // Criar nova assinatura
+      const res = await asaasFetch("/subscriptions", {
+        method: "POST",
+        body: {
+          customer: org.asaasCustomerId,
+          billingType: "BOLETO",
+          nextDueDate,
+          value,
+          cycle: "MONTHLY",
+          description: `Vestra - ${org.name}`,
+        },
+      });
+      const data = (await res.json()) as { id?: string; errors?: Array<{ description: string }> };
+
+      if (!res.ok) {
+        const msg = data.errors?.[0]?.description ?? "Erro ao criar assinatura no Asaas.";
+        return { error: msg };
+      }
+
+      const subscriptionId = data.id;
+      if (!subscriptionId) return { error: "Asaas não retornou o ID da assinatura." };
+
+      await db
+        .update(organizations)
+        .set({
+          asaasSubscriptionId: String(subscriptionId),
+          planValueCents: valueCents,
+          planBillingDay: day,
+        })
+        .where(eq(organizations.id, organizationId));
+    }
+
+    revalidatePath("/minha-conta");
+    revalidatePath("/dashboard");
+    return { success: true };
+  } catch (err) {
+    console.error("createOrUpdateSubscription:", err);
     return { error: "Falha ao comunicar com o Asaas. Tente novamente." };
   }
 }

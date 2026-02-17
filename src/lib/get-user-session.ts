@@ -37,6 +37,13 @@ export async function getUserSession() {
     redirect("/login?error=no_org");
   }
 
+  // 3. Verificar status de cobrança e bloquear acesso se suspenso
+  const billingStatus = member.organization.billingStatus ?? "active";
+  if (billingStatus === "suspended") {
+    // Redireciona para /minha-conta com mensagem de bloqueio
+    redirect("/minha-conta?blocked=suspended");
+  }
+
   return {
     user,
     profile,
@@ -46,7 +53,7 @@ export async function getUserSession() {
     storeId: member.defaultStoreId,
     role: member.role,
     orgSlug: member.organization.slug,
-
+    billingStatus,
     mustChangePassword: profile?.mustChangePassword || false,
   };
 }

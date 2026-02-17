@@ -246,8 +246,8 @@ export function PosCheckoutModal({
             </>
           ) : loadingReceipt ? (
             <div className="p-8 flex flex-col items-center justify-center gap-3 ">
-              <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
-              <p className="text-sm text-slate-600">Gerando comprovante...</p>
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <p className="text-sm text-muted-foreground">Gerando comprovante...</p>
             </div>
           ) : (
             <>
@@ -258,14 +258,14 @@ export function PosCheckoutModal({
               <ScrollArea className="flex-1 min-h-0 px-4 overflow-y-auto">
                 <div className="space-y-4 pb-4">
                   <div>
-                    <h4 className="text-sm font-semibold text-slate-700 mb-2">
+                    <h4 className="text-sm font-semibold text-foreground mb-2">
                       Resumo da venda
                     </h4>
                     <ul className="space-y-1.5 text-sm">
                       {cart.map((item) => (
                         <li
                           key={item.cartId}
-                          className="flex justify-between gap-2 text-slate-600"
+                          className="flex justify-between gap-2 text-muted-foreground"
                         >
                           <span className="truncate">
                             {item.quantity}x {item.name}
@@ -281,7 +281,7 @@ export function PosCheckoutModal({
                       ))}
                     </ul>
                     <Separator className="my-3" />
-                    <div className="flex justify-between font-bold text-slate-900">
+                    <div className="flex justify-between font-bold text-foreground">
                       <span>Total</span>
                       <span>
                         {new Intl.NumberFormat("pt-BR", {
@@ -293,7 +293,7 @@ export function PosCheckoutModal({
                     {paymentMethod === "credit" &&
                       hasInterest &&
                       interestRateBps > 0 && (
-                        <div className="mt-2 text-xs text-slate-600 space-y-1">
+                        <div className="mt-2 text-xs text-muted-foreground space-y-1">
                           <div className="flex justify-between">
                             <span>Subtotal</span>
                             <span>
@@ -319,7 +319,7 @@ export function PosCheckoutModal({
                   </div>
 
                   <div>
-                    <h4 className="text-sm font-semibold text-slate-700 mb-2">
+                    <h4 className="text-sm font-semibold text-foreground mb-2">
                       Forma de pagamento
                     </h4>
                     <div
@@ -332,8 +332,8 @@ export function PosCheckoutModal({
                           key={opt.value}
                           className={`flex items-center gap-2 rounded-lg border px-3 py-2.5 cursor-pointer transition-colors ${
                             paymentMethod === opt.value
-                              ? "border-indigo-600 bg-indigo-50 text-indigo-900"
-                              : "border-slate-200 hover:bg-slate-50"
+                              ? "border-primary bg-primary/10 text-foreground"
+                              : "border-border hover:bg-muted/60"
                           }`}
                         >
                           <input
@@ -359,7 +359,7 @@ export function PosCheckoutModal({
                   </div>
 
                   {paymentMethod === "credit" && (
-                    <div className="rounded-lg border border-slate-200 bg-white p-3">
+                    <div className="rounded-lg border border-border bg-card p-3">
                       <div className="flex items-center justify-between gap-3">
                         <Label htmlFor="pos-interest-switch">
                           Tem juros no parcelado?
@@ -377,7 +377,7 @@ export function PosCheckoutModal({
                         <div className="mt-3 flex items-center gap-2">
                           <Label
                             htmlFor="pos-interest-percent"
-                            className="text-slate-700"
+                            className="text-foreground"
                           >
                             Juros (%)
                           </Label>
@@ -393,7 +393,7 @@ export function PosCheckoutModal({
                             onChange={(e) => setInterestPercent(e.target.value)}
                             className="w-32"
                           />
-                          <span className="text-xs text-slate-500">
+                          <span className="text-xs text-muted-foreground">
                             (0% a 100%)
                           </span>
                         </div>
@@ -402,7 +402,7 @@ export function PosCheckoutModal({
                   )}
 
                   <div>
-                    <h4 className="text-sm font-semibold text-slate-700 mb-2">
+                    <h4 className="text-sm font-semibold text-foreground mb-2">
                       Cliente (CPF/CNPJ) — obrigatório
                     </h4>
                     <div className="flex gap-2">
@@ -427,7 +427,7 @@ export function PosCheckoutModal({
                       </Button>
                     </div>
                     {client ? (
-                      <div className="mt-2 flex items-center gap-2 rounded-lg bg-green-50 border border-green-200 px-3 py-2 text-sm text-green-800">
+                      <div className="mt-2 flex items-center gap-2 rounded-lg bg-green-50 border border-green-200 px-3 py-2 text-sm text-foreground">
                         <UserCheck className="h-4 w-4 shrink-0" />
                         <span className="font-medium">{client.name}</span>
                       </div>
@@ -450,14 +450,14 @@ export function PosCheckoutModal({
                 </div>
               </ScrollArea>
 
-              <div className="p-4 border-t bg-slate-50 space-y-2 shrink-0">
+              <div className="p-4 border-t bg-muted/40 space-y-2 shrink-0">
                 {!client && (
-                  <p className="text-xs text-amber-600 text-center">
+                  <p className="text-xs text-muted-foreground text-center">
                     Busque ou cadastre um cliente para habilitar a venda.
                   </p>
                 )}
                 <Button
-                  className="w-full bg-indigo-600 hover:bg-indigo-700 font-bold py-6 px-4"
+                  className="w-full bg-primary hover:bg-primary/90 font-bold py-6 px-4 text-primary-foreground"
                   size="lg"
                   onClick={handleConfirmSale}
                   disabled={submitting || cart.length === 0 || !client}
