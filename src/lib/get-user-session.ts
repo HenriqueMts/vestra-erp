@@ -37,13 +37,12 @@ export async function getUserSession() {
     redirect("/login?error=no_org");
   }
 
-  // 3. Verificar status de cobrança e bloquear acesso se suspenso
-  const billingStatus = member.organization.billingStatus ?? "active";
-  if (billingStatus === "suspended") {
-    // Redireciona para /minha-conta com mensagem de bloqueio
-    redirect("/minha-conta?blocked=suspended");
-  }
-
+  // 3. Obter status de cobrança
+  const billingStatus = (member.organization.billingStatus ?? "active") as "active" | "overdue" | "suspended";
+  
+  // Nota: O bloqueio de acesso quando suspended é feito nos layouts (dashboard, POS)
+  // A página /minha-conta permite acesso mesmo suspenso para ver faturas
+  
   return {
     user,
     profile,

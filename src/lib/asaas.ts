@@ -76,7 +76,7 @@ export function isAsaasConfigured(): boolean {
 
 export async function asaasFetch(
   path: string,
-  options: RequestInit & { method?: string; body?: unknown } = {}
+  options: Omit<RequestInit, "body"> & { body?: Record<string, unknown> | unknown } = {}
 ): Promise<Response> {
   const key = getApiKey();
   if (!key) throw new Error("ASAAS_API_KEY não configurada");
