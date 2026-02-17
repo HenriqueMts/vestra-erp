@@ -37,6 +37,38 @@ export async function createStore(data: StoreInput) {
   }
 }
 
+export async function updateStore(storeId: string, data: StoreInput) {
+  const { user, organizationId } = await getUserSession();
+
+  if (!user || !organizationId) return { error: "Não autorizado" };
+
+  try {
+    const [existing] = await db
+      .select()
+      .from(stores)
+      .where(
+        and(eq(stores.id, storeId), eq(stores.organizationId, organizationId))
+      )
+      .limit(1);
+
+    if (!existing) return { error: "Loja não encontrada." };
+
+    await db
+      .update(stores)
+      .set({
+        name: data.name,
+        address: data.address ?? null,
+      })
+      .where(eq(stores.id, storeId));
+
+    revalidatePath("/settings");
+    return { success: true, message: "Loja atualizada." };
+  } catch (error) {
+    console.error(error);
+    return { error: "Erro ao atualizar loja." };
+  }
+}
+
 export async function deleteStore(storeId: string) {
   const { user, organizationId } = await getUserSession();
 

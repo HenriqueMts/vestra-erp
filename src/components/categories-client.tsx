@@ -110,7 +110,7 @@ export function CategoriesClient({
           </div>
           <Button
             onClick={handleAdd}
-            className="w-full bg-slate-900 text-white"
+            className="w-full bg-primary text-primary-foreground"
           >
             <Plus size={16} className="mr-2" /> Adicionar
           </Button>
@@ -126,7 +126,7 @@ export function CategoriesClient({
         </CardHeader>
         <CardContent>
           {categoriesList.length === 0 ? (
-            <p className="text-slate-500 text-sm">
+            <p className="text-muted-foreground text-sm">
               Nenhuma categoria cadastrada.
             </p>
           ) : (
@@ -134,20 +134,20 @@ export function CategoriesClient({
               {categoriesList.map((cat) => (
                 <div
                   key={cat.id}
-                  className="flex items-center gap-2 p-2 px-4 border rounded-lg bg-slate-50 min-w-[100px] justify-between group"
+                  className="flex items-center gap-2 p-2 px-4 border rounded-lg bg-muted min-w-[100px] justify-between group"
                 >
-                  <span className="font-medium text-slate-900">{cat.name}</span>
+                  <span className="font-medium text-foreground">{cat.name}</span>
                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
                       onClick={() => handleEdit(cat.id, cat.name)}
-                      className="p-1 text-slate-400 hover:text-indigo-600 rounded"
+                      className="p-1 text-muted-foreground hover:text-primary rounded"
                       aria-label="Editar"
                     >
                       <Pencil size={14} />
                     </button>
                     <button
                       onClick={() => handleDelete(cat.id)}
-                      className="p-1 text-slate-400 hover:text-red-500 rounded"
+                      className="p-1 text-muted-foreground hover:text-destructive rounded"
                       aria-label="Excluir"
                     >
                       <Trash2 size={14} />
@@ -179,7 +179,7 @@ export function CategoriesClient({
               <Button variant="outline" onClick={() => setEditingId(null)}>
                 Cancelar
               </Button>
-              <Button onClick={handleSaveEdit} className="bg-slate-900">
+              <Button onClick={handleSaveEdit} className="bg-primary">
                 Salvar
               </Button>
             </div>

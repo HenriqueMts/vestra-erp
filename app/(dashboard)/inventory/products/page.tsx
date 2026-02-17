@@ -85,11 +85,11 @@ export default async function ProductsPage({
     <div className="w-full min-h-screen space-y-6 sm:space-y-8 p-4 sm:p-6 lg:p-8 flex flex-col">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-6">
         <div className="space-y-2 w-full sm:w-auto">
-          <p className="text-xs sm:text-sm text-slate-500 font-medium flex items-center gap-2 overflow-x-auto whitespace-nowrap">
-            Menu Principal <span className="text-slate-300">/</span>{" "}
-            <span className="text-slate-900 font-semibold">Produtos</span>
+          <p className="text-xs sm:text-sm text-muted-foreground font-medium flex items-center gap-2 overflow-x-auto whitespace-nowrap">
+            Menu Principal <span className="text-muted-foreground">/</span>{" "}
+            <span className="text-foreground font-semibold">Produtos</span>
           </p>
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-slate-900">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-foreground">
             Produtos
           </h1>
         </div>
@@ -103,16 +103,16 @@ export default async function ProductsPage({
       </div>
 
       {isListEmpty && !isFilteredResult ? (
-        <div className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-xl sm:rounded-2xl bg-white/50 space-y-4 sm:space-y-6 p-6 sm:p-12">
-          <div className="bg-slate-100 p-4 sm:p-6 rounded-2xl text-slate-400">
+        <div className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-border rounded-xl sm:rounded-2xl bg-card/50 space-y-4 sm:space-y-6 p-6 sm:p-12">
+          <div className="bg-muted p-4 sm:p-6 rounded-2xl text-muted-foreground">
             <Package className="w-10 h-10 sm:w-12 sm:h-12" />
           </div>
 
           <div className="text-center space-y-1 sm:space-y-2">
-            <h3 className="text-lg sm:text-xl font-semibold text-slate-900">
+            <h3 className="text-lg sm:text-xl font-semibold text-foreground">
               Nenhum produto cadastrado
             </h3>
-            <p className="text-slate-500 text-sm sm:text-base max-w-xs">
+            <p className="text-muted-foreground text-sm sm:text-base max-w-xs">
               Comece adicionando seus produtos para gerenciar o catálogo.
             </p>
           </div>
@@ -125,31 +125,31 @@ export default async function ProductsPage({
         </div>
       ) : (
         <div className="space-y-4 w-full">
-          <div className="bg-white rounded-xl border border-slate-100 shadow-sm overflow-x-auto">
+          <div className="bg-card rounded-xl border border-border shadow-sm overflow-x-auto">
             <div className="min-w-full">
               <Table>
-                <TableHeader className="bg-slate-50/50">
+                <TableHeader className="bg-muted/50">
                   <TableRow>
                     <TableHead className="w-[60px] sm:w-[80px] py-3 sm:py-4 pl-4 sm:pl-6"></TableHead>
-                    <TableHead className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider py-3 sm:py-4">
+                    <TableHead className="text-[10px] sm:text-[11px] font-bold text-muted-foreground uppercase tracking-wider py-3 sm:py-4">
                       Produto
                     </TableHead>
-                    <TableHead className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider py-3 sm:py-4 hidden md:table-cell">
+                    <TableHead className="text-[10px] sm:text-[11px] font-bold text-muted-foreground uppercase tracking-wider py-3 sm:py-4 hidden md:table-cell">
                       Categoria
                     </TableHead>
-                    <TableHead className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider py-3 sm:py-4 hidden lg:table-cell">
+                    <TableHead className="text-[10px] sm:text-[11px] font-bold text-muted-foreground uppercase tracking-wider py-3 sm:py-4 hidden lg:table-cell">
                       Estoque Total
                     </TableHead>
-                    <TableHead className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider py-3 sm:py-4">
+                    <TableHead className="text-[10px] sm:text-[11px] font-bold text-muted-foreground uppercase tracking-wider py-3 sm:py-4">
                       Status
                     </TableHead>
-                    <TableHead className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider py-3 sm:py-4 hidden sm:table-cell">
+                    <TableHead className="text-[10px] sm:text-[11px] font-bold text-muted-foreground uppercase tracking-wider py-3 sm:py-4 hidden sm:table-cell">
                       Venda
                     </TableHead>
-                    <TableHead className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider py-3 sm:py-4 hidden lg:table-cell">
+                    <TableHead className="text-[10px] sm:text-[11px] font-bold text-muted-foreground uppercase tracking-wider py-3 sm:py-4 hidden lg:table-cell">
                       Custo
                     </TableHead>
-                    <TableHead className="text-[10px] sm:text-[11px] font-bold text-slate-400 uppercase tracking-wider py-3 sm:py-4 hidden xl:table-cell">
+                    <TableHead className="text-[10px] sm:text-[11px] font-bold text-muted-foreground uppercase tracking-wider py-3 sm:py-4 hidden xl:table-cell">
                       Lucro
                     </TableHead>
                     <TableHead className="w-[40px] sm:w-[50px]"></TableHead>
@@ -161,7 +161,7 @@ export default async function ProductsPage({
                     <TableRow>
                       <TableCell
                         colSpan={9}
-                        className="h-24 text-center text-slate-500 text-sm"
+                        className="h-24 text-center text-muted-foreground text-sm"
                       >
                         Nenhum produto encontrado com esses filtros.
                       </TableCell>
@@ -191,10 +191,10 @@ export default async function ProductsPage({
                       return (
                         <TableRow
                           key={product.id}
-                          className="hover:bg-slate-50/50 transition-colors border-slate-50"
+                          className="hover:bg-muted/50 transition-colors border-border"
                         >
                           <TableCell className="py-3 sm:py-4 pl-4 sm:pl-6 align-middle">
-                            <div className="relative h-8 w-8 sm:h-10 sm:w-10 rounded-lg overflow-hidden border border-slate-100 bg-slate-50 flex-shrink-0">
+                            <div className="relative h-8 w-8 sm:h-10 sm:w-10 rounded-lg overflow-hidden border border-border bg-muted flex-shrink-0">
                               {product.imageUrl ? (
                                 <Image
                                   src={product.imageUrl}
@@ -204,27 +204,27 @@ export default async function ProductsPage({
                                   sizes="(max-width: 640px) 32px, 40px"
                                 />
                               ) : (
-                                <div className="flex items-center justify-center h-full w-full text-slate-300">
+                                <div className="flex items-center justify-center h-full w-full text-muted-foreground">
                                   <ImageIcon className="w-4 h-4 sm:w-5 sm:h-5" />
                                 </div>
                               )}
                             </div>
                           </TableCell>
 
-                          <TableCell className="font-medium text-slate-700 text-sm sm:text-base align-middle">
+                          <TableCell className="font-medium text-foreground text-sm sm:text-base align-middle">
                             <div className="flex flex-col gap-1">
                               <span className="line-clamp-1">
                                 {product.name}
                               </span>
                               {product.variants.length > 0 && (
-                                <span className="text-[9px] sm:text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded border border-slate-200 w-fit">
+                                <span className="text-[9px] sm:text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded border border-border w-fit">
                                   {product.variants.length} variações
                                 </span>
                               )}
                             </div>
                           </TableCell>
 
-                          <TableCell className="text-slate-500 text-xs sm:text-sm align-middle hidden md:table-cell">
+                          <TableCell className="text-muted-foreground text-xs sm:text-sm align-middle hidden md:table-cell">
                             {product.category?.name || "Sem Categoria"}
                           </TableCell>
 
@@ -233,7 +233,7 @@ export default async function ProductsPage({
                               className={`text-xs sm:text-sm font-medium ${
                                 totalStock === 0
                                   ? "text-red-500"
-                                  : "text-slate-700"
+                                  : "text-foreground"
                               }`}
                             >
                               {totalStock} un
@@ -246,8 +246,8 @@ export default async function ProductsPage({
                                 product.status === "active"
                                   ? "bg-green-50 text-green-700"
                                   : product.status === "inactive"
-                                    ? "bg-slate-100 text-slate-600"
-                                    : "bg-amber-50 text-amber-700"
+                                    ? "bg-muted text-muted-foreground"
+                                    : "bg-muted text-muted-foreground"
                               }`}
                             >
                               {product.status === "active"
@@ -258,11 +258,11 @@ export default async function ProductsPage({
                             </span>
                           </TableCell>
 
-                          <TableCell className="text-slate-700 font-medium text-xs sm:text-sm align-middle hidden sm:table-cell">
+                          <TableCell className="text-foreground font-medium text-xs sm:text-sm align-middle hidden sm:table-cell">
                             {formatCurrency(product.basePrice)}
                           </TableCell>
 
-                          <TableCell className="text-slate-600 text-xs sm:text-sm align-middle hidden lg:table-cell">
+                          <TableCell className="text-muted-foreground text-xs sm:text-sm align-middle hidden lg:table-cell">
                             {product.costPrice != null
                               ? formatCurrency(product.costPrice)
                               : "—"}
@@ -274,7 +274,7 @@ export default async function ProductsPage({
                                 {formatCurrency(
                                   product.basePrice - product.costPrice
                                 )}{" "}
-                                <span className="text-slate-500 font-normal">
+                                <span className="text-muted-foreground font-normal">
                                   (
                                   {product.basePrice > 0
                                     ? (
@@ -306,6 +306,10 @@ export default async function ProductsPage({
                               images={product.images}
                               inventory={product.inventory}
                               variants={product.variants}
+                              ncm={product.ncm}
+                              origin={product.origin}
+                              cfop={product.cfop}
+                              cest={product.cest}
                               organizationId={organizationId}
                               options={options}
                             />

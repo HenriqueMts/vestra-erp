@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { getUserSession } from "@/lib/get-user-session";
 import { db } from "@/db";
 import { sales } from "@/db/schema";
@@ -33,6 +34,9 @@ export default async function SalesSummaryPage({
   searchParams: SearchParams;
 }>) {
   const session = await getUserSession();
+  if (session.role === "seller") {
+    redirect("/dashboard");
+  }
   const params = await searchParams;
 
   const { from, to } = parseDateRange(params);
@@ -146,10 +150,10 @@ export default async function SalesSummaryPage({
   return (
     <div className="w-full min-h-screen space-y-6 sm:space-y-8 p-4 sm:p-6 lg:p-8">
       <div className="space-y-2">
-        <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-slate-900">
+        <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-foreground">
           Resumo de Vendas
         </h2>
-        <p className="text-sm sm:text-base text-slate-600">
+        <p className="text-sm sm:text-base text-muted-foreground">
           Acompanhe o desempenho das vendas por período e por mês.
         </p>
       </div>
@@ -165,7 +169,7 @@ export default async function SalesSummaryPage({
             <div className="flex flex-col gap-1">
               <label
                 htmlFor="from"
-                className="text-xs font-medium text-slate-600"
+                className="text-xs font-medium text-muted-foreground"
               >
                 De
               </label>
@@ -179,7 +183,7 @@ export default async function SalesSummaryPage({
             <div className="flex flex-col gap-1">
               <label
                 htmlFor="to"
-                className="text-xs font-medium text-slate-600"
+                className="text-xs font-medium text-muted-foreground"
               >
                 Até
               </label>
@@ -205,10 +209,10 @@ export default async function SalesSummaryPage({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl sm:text-3xl font-bold text-emerald-600">
+            <p className="text-2xl sm:text-3xl font-bold text-chart-2">
               {formatCurrency(currentTotal)}
             </p>
-            <p className="text-xs sm:text-sm text-slate-500 mt-1">
+            <p className="text-xs sm:text-sm text-muted-foreground mt-1">
               {currentCount} venda(s)
             </p>
           </CardContent>
@@ -221,10 +225,10 @@ export default async function SalesSummaryPage({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl sm:text-3xl font-bold text-slate-900">
+            <p className="text-2xl sm:text-3xl font-bold text-foreground">
               {formatCurrency(ticketMedio)}
             </p>
-            <p className="text-xs sm:text-sm text-slate-500 mt-1">
+            <p className="text-xs sm:text-sm text-muted-foreground mt-1">
               Valor médio por venda
             </p>
           </CardContent>
@@ -237,10 +241,10 @@ export default async function SalesSummaryPage({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl sm:text-3xl font-bold text-slate-900">
+            <p className="text-2xl sm:text-3xl font-bold text-foreground">
               {formatCurrency(prevTotal)}
             </p>
-            <p className="text-xs sm:text-sm text-slate-500 mt-1">
+            <p className="text-xs sm:text-sm text-muted-foreground mt-1">
               Mesmo número de dias anterior
             </p>
           </CardContent>
@@ -255,12 +259,12 @@ export default async function SalesSummaryPage({
           <CardContent>
             <p
               className={`text-2xl sm:text-3xl font-bold ${
-                diffAbs >= 0 ? "text-emerald-600" : "text-red-600"
+                diffAbs >= 0 ? "text-chart-2" : "text-destructive"
               }`}
             >
               {formatPercentage(diffPerc)}
             </p>
-            <p className="text-xs sm:text-sm text-slate-500 mt-1">
+            <p className="text-xs sm:text-sm text-muted-foreground mt-1">
               Diferença de {formatCurrency(Math.abs(diffAbs))} em relação ao
               período anterior
             </p>

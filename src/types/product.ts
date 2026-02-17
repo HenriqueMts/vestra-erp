@@ -27,6 +27,14 @@ export const saveProductSchema = z
     hasVariants: z.boolean().default(false),
     simpleInventory: z.array(inventoryInputSchema).default([]),
     variants: z.array(variantInputSchema).default([]),
+    ncm: z
+      .string()
+      .transform((s) => s.replace(/\D/g, "").slice(0, 8).padEnd(8, "0"))
+      .refine((s) => s.length === 8, "NCM deve ter 8 dígitos")
+      .default("00000000"),
+    origin: z.string().min(1, "Origem é obrigatória").default("0"),
+    cfop: z.string().optional().default("5102"),
+    cest: z.string().optional(),
   })
   .refine(
     (data) => {
@@ -82,4 +90,8 @@ export interface ProductInitialData {
     sizeId: string | null;
     inventory: Array<{ id: string; storeId: string; quantity: number }>;
   }>;
+  ncm?: string | null;
+  origin?: string | null;
+  cfop?: string | null;
+  cest?: string | null;
 }

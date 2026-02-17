@@ -12,14 +12,14 @@ interface RecentClientsProps {
 export function RecentClients({ clients }: Readonly<RecentClientsProps>) {
   if (clients.length === 0) {
     return (
-      <div className="text-xs sm:text-sm text-slate-500">
+      <div className="text-xs sm:text-sm text-muted-foreground">
         Nenhum cliente recente.
       </div>
     );
   }
 
   return (
-    <div className="space-y-4 sm:space-y-8">
+    <div className="max-h-[320px] overflow-y-auto space-y-4 sm:space-y-6 pr-1">
       {clients.map((client) => {
         const initials = client.name
           .split(" ")
@@ -33,20 +33,20 @@ export function RecentClients({ clients }: Readonly<RecentClientsProps>) {
             key={client.id}
             className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4"
           >
-            <Avatar className="h-9 w-9 bg-slate-100 border border-slate-200 shrink-0">
-              <AvatarFallback className="text-slate-700 font-bold text-xs">
+            <Avatar className="h-9 w-9 bg-muted border border-border shrink-0">
+              <AvatarFallback className="text-foreground font-bold text-xs">
                 {initials}
               </AvatarFallback>
             </Avatar>
             <div className="flex-1 min-w-0 space-y-1">
-              <p className="text-xs sm:text-sm font-medium leading-none text-slate-900 wrap-break-word">
+              <p className="text-xs sm:text-sm font-medium leading-none text-foreground wrap-break-word">
                 {client.name}
               </p>
-              <p className="text-xs text-slate-500 sm:max-w-50 truncate">
+              <p className="text-xs text-muted-foreground sm:max-w-50 truncate">
                 {client.email || "Sem e-mail"}
               </p>
             </div>
-            <div className="text-xs text-slate-400 font-medium shrink-0">
+            <div className="text-xs text-muted-foreground font-medium shrink-0">
               {client.createdAt
                 ? new Date(client.createdAt).toLocaleDateString("pt-BR", {
                     day: "2-digit",

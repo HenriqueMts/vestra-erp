@@ -45,6 +45,11 @@ export const organizations = pgTable("organizations", {
   logoUrl: text("logo_url"),
   plan: text("plan").default("enterprise"),
   createdAt: timestamp("created_at").defaultNow(),
+  // Asaas: cobrança de planos (uma conta Vestra, clientes = organizações)
+  asaasCustomerId: text("asaas_customer_id"),
+  asaasSubscriptionId: text("asaas_subscription_id"),
+  planValueCents: integer("plan_value_cents"),
+  planBillingDay: integer("plan_billing_day"),
 });
 
 export const stores = pgTable("stores", {
@@ -137,6 +142,12 @@ export const products = pgTable("products", {
 
   status: statusEnum("status").default("active"),
   createdAt: timestamp("created_at").defaultNow(),
+
+  // Campos fiscais obrigatórios para emissão de NFC-e
+  ncm: text("ncm").default("00000000").notNull(),
+  origin: text("origin").default("0").notNull(),
+  cfop: text("cfop").default("5102"),
+  cest: text("cest"),
 });
 
 export const productImages = pgTable("product_images", {
@@ -228,6 +239,38 @@ export const clients = pgTable(
 // ----------------------------------------------------------------------
 //  VENDAS (POS)
 // ----------------------------------------------------------------------
+// Configurações fiscais (1:1 com Organization) — Focus NFe / NFC-e
+export const invoiceSettings = pgTable("invoice_settings", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  organizationId: uuid("organization_id")
+    .notNull()
+    .unique()
+    .references(() => organizations.id, { onDelete: "cascade" }),
+  isActive: boolean("is_active").default(false).notNull(),
+  providerToken: text("provider_token"),
+  environment: text("environment").default("homologation"),
+  cscId: text("csc_id"),
+  cscToken: text("csc_token"),
+  certificateId: text("certificate_id"),
+  /** Status do certificado na Focus (ex.: valid). Não guardamos o .pfx. */
+  certificateStatus: text("certificate_status"),
+  /** Inscrição Estadual (para cadastro na Focus). */
+  ie: text("ie"),
+  /** Inscrição Municipal (para cadastro na Focus). */
+  im: text("im"),
+  /** 1=Simples Nacional, 2=Excesso sublimite, 3=Normal. */
+  regimeTributario: text("regime_tributario"),
+  /** Endereço fiscal (cadastro Focus). */
+  cep: text("cep"),
+  logradouro: text("logradouro"),
+  numero: text("numero"),
+  complemento: text("complemento"),
+  bairro: text("bairro"),
+  municipio: text("municipio"),
+  uf: text("uf"),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 export const sales = pgTable("sales", {
   id: uuid("id").defaultRandom().primaryKey(),
   organizationId: uuid("organization_id")
@@ -245,6 +288,12 @@ export const sales = pgTable("sales", {
   paymentMethod: paymentMethodEnum("payment_method").notNull(),
   totalCents: integer("total_cents").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
+  // Campos fiscais (nullable — nem todos emitem nota)
+  invoiceStatus: text("invoice_status"),
+  invoiceUrl: text("invoice_url"),
+  invoiceXml: text("invoice_xml"),
+  invoiceNumber: integer("invoice_number"),
+  invoiceSeries: integer("invoice_series"),
 });
 
 // ----------------------------------------------------------------------
@@ -287,7 +336,7 @@ export const saleItems = pgTable("sale_items", {
 //  RELATIONS
 // ----------------------------------------------------------------------
 
-export const organizationRelations = relations(organizations, ({ many }) => ({
+export const organizationRelations = relations(organizations, ({ one, many }) => ({
   stores: many(stores),
   members: many(members),
   clients: many(clients),
@@ -297,6 +346,14 @@ export const organizationRelations = relations(organizations, ({ many }) => ({
   sizes: many(sizes),
   sales: many(sales),
   cashClosures: many(cashClosures),
+  invoiceSettings: one(invoiceSettings),
+}));
+
+export const invoiceSettingsRelations = relations(invoiceSettings, ({ one }) => ({
+  organization: one(organizations, {
+    fields: [invoiceSettings.organizationId],
+    references: [organizations.id],
+  }),
 }));
 
 export const categoryRelations = relations(categories, ({ one, many }) => ({

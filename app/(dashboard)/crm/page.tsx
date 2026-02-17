@@ -80,11 +80,11 @@ export default async function ClientesPage({
     <div className="w-full min-h-screen space-y-6 sm:space-y-8 p-4 sm:p-6 lg:p-8 flex flex-col">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-6">
         <div className="space-y-2 w-full sm:w-auto">
-          <p className="text-xs sm:text-sm text-slate-500 font-medium flex items-center gap-2 overflow-x-auto whitespace-nowrap">
-            Menu Principal <span className="text-slate-300">/</span>{" "}
-            <span className="text-slate-900 font-semibold">Clientes</span>
+          <p className="text-xs sm:text-sm text-muted-foreground font-medium flex items-center gap-2 overflow-x-auto whitespace-nowrap">
+            Menu Principal <span className="text-muted-foreground">/</span>{" "}
+            <span className="text-foreground font-semibold">Clientes</span>
           </p>
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-slate-900">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-foreground">
             Clientes
           </h1>
         </div>
@@ -96,15 +96,15 @@ export default async function ClientesPage({
       </div>
 
       {!hasClients && !query ? (
-        <div className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-xl sm:rounded-2xl bg-white/50 space-y-4 p-6 sm:p-12">
-          <div className="bg-slate-100 p-4 sm:p-6 rounded-2xl text-slate-400">
+        <div className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-border rounded-xl sm:rounded-2xl bg-card/50 space-y-4 p-6 sm:p-12">
+          <div className="bg-muted p-4 sm:p-6 rounded-2xl text-muted-foreground">
             <Users size={40} className="sm:w-12 sm:h-12" />
           </div>
           <div className="text-center space-y-1">
-            <h3 className="text-lg sm:text-xl font-semibold text-slate-900">
+            <h3 className="text-lg sm:text-xl font-semibold text-foreground">
               Nenhum cliente cadastrado
             </h3>
-            <p className="text-slate-500 text-sm sm:text-base max-w-xs">
+            <p className="text-muted-foreground text-sm sm:text-base max-w-xs">
               Comece adicionando seus clientes para gerenciar as vendas.
             </p>
           </div>
@@ -112,20 +112,20 @@ export default async function ClientesPage({
         </div>
       ) : (
         <div className="space-y-4 w-full">
-          <div className="hidden md:block bg-white rounded-xl border border-slate-100 shadow-sm overflow-hidden">
+          <div className="hidden md:block bg-card rounded-xl border border-border shadow-sm overflow-hidden">
             <Table>
-              <TableHeader className="bg-slate-50/50">
+              <TableHeader className="bg-muted/50">
                 <TableRow>
-                  <TableHead className="text-[11px] font-bold text-slate-400 uppercase tracking-wider py-4 pl-6">
+                  <TableHead className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider py-4 pl-6">
                     Nome / Razão Social
                   </TableHead>
-                  <TableHead className="text-[11px] font-bold text-slate-400 uppercase tracking-wider py-4">
+                  <TableHead className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider py-4">
                     CPF / CNPJ
                   </TableHead>
-                  <TableHead className="text-[11px] font-bold text-slate-400 uppercase tracking-wider py-4">
+                  <TableHead className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider py-4">
                     E-mail
                   </TableHead>
-                  <TableHead className="text-[11px] font-bold text-slate-400 uppercase tracking-wider py-4">
+                  <TableHead className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider py-4">
                     Telefone
                   </TableHead>
                   <TableHead className="w-[50px]"></TableHead>
@@ -136,7 +136,7 @@ export default async function ClientesPage({
                   <TableRow>
                     <TableCell
                       colSpan={5}
-                      className="h-24 text-center text-slate-500"
+                      className="h-24 text-center text-muted-foreground"
                     >
                       Nenhum resultado encontrado para &quot;{query}&quot;
                     </TableCell>
@@ -145,20 +145,20 @@ export default async function ClientesPage({
                   allClients.map((client) => (
                     <TableRow
                       key={client.id}
-                      className="hover:bg-slate-50/50 transition-colors border-slate-50"
+                      className="hover:bg-muted/50 transition-colors border-border"
                     >
-                      <TableCell className="font-medium text-slate-700 py-4 pl-6">
+                      <TableCell className="font-medium text-foreground py-4 pl-6">
                         {client.name}
                       </TableCell>
-                      <TableCell className="text-slate-500 font-mono text-xs">
+                      <TableCell className="text-muted-foreground font-mono text-xs">
                         {client.type === "PJ"
                           ? normalizeCnpj(client.document)
                           : normalizeCpf(client.document)}
                       </TableCell>
-                      <TableCell className="text-slate-500 text-sm">
+                      <TableCell className="text-muted-foreground text-sm">
                         {client.email || "-"}
                       </TableCell>
-                      <TableCell className="text-slate-500 text-sm">
+                      <TableCell className="text-muted-foreground text-sm">
                         {normalizePhoneNumber(client.phone || "")}
                       </TableCell>
                       <TableCell>
@@ -180,21 +180,21 @@ export default async function ClientesPage({
 
           <div className="md:hidden space-y-3">
             {isFilteredEmpty ? (
-              <div className="text-center py-8 text-slate-500">
+              <div className="text-center py-8 text-muted-foreground">
                 Nenhum resultado encontrado para &quot;{query}&quot;
               </div>
             ) : (
               allClients.map((client) => (
                 <div
                   key={client.id}
-                  className="bg-white rounded-lg border border-slate-100 shadow-sm p-4 space-y-3"
+                  className="bg-card rounded-lg border border-border shadow-sm p-4 space-y-3"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-bold text-slate-900 text-sm break-words">
+                      <h3 className="font-bold text-foreground text-sm break-words">
                         {client.name}
                       </h3>
-                      <p className="text-xs text-slate-500 font-mono mt-1">
+                      <p className="text-xs text-muted-foreground font-mono mt-1">
                         {client.type === "PJ"
                           ? normalizeCnpj(client.document)
                           : normalizeCpf(client.document)}
@@ -209,20 +209,20 @@ export default async function ClientesPage({
                       type={client.type}
                     />
                   </div>
-                  <div className="space-y-2 pt-2 border-t border-slate-100">
+                  <div className="space-y-2 pt-2 border-t border-border">
                     <div>
-                      <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider">
+                      <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">
                         E-mail
                       </p>
-                      <p className="text-sm text-slate-700 break-all">
+                      <p className="text-sm text-foreground break-all">
                         {client.email || "-"}
                       </p>
                     </div>
                     <div>
-                      <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider">
+                      <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">
                         Telefone
                       </p>
-                      <p className="text-sm text-slate-700">
+                      <p className="text-sm text-foreground">
                         {normalizePhoneNumber(client.phone || "") || "-"}
                       </p>
                     </div>
@@ -246,13 +246,13 @@ function ModalCadastro({
     <Dialog>
       <DialogTrigger asChild>
         <Button
-          className={`${centralizado ? "px-8 py-6 text-lg" : "px-4"} bg-[#1a1a1a] hover:bg-black text-white gap-2 transition-all`}
+          className={`${centralizado ? "px-8 py-6 text-lg" : "px-4"} bg-primary hover:bg-primary/90 text-primary-foreground gap-2 transition-all`}
         >
           <Plus size={centralizado ? 22 : 18} />
           {centralizado ? "Adicionar Cliente" : "Novo"}
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px] bg-white">
+      <DialogContent className="sm:max-w-[500px] bg-card">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold">
             Cadastrar Cliente

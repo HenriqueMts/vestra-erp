@@ -15,6 +15,7 @@ import {
   colors,
   sizes,
 } from "@/db/schema";
+import { emitInvoice } from "@/actions/invoice";
 import { eq, and, isNull, gte, lte, sql, desc } from "drizzle-orm";
 import { getUserSession } from "@/lib/get-user-session";
 import { revalidatePath } from "next/cache";
@@ -215,7 +216,24 @@ export async function completeSale(
     revalidatePath("/pos");
     revalidatePath("/inventory/products");
     revalidatePath("/dashboard");
-    return { success: true, saleId: saleId!, message: "Venda concluída!" };
+
+    let invoiceUrl: string | undefined;
+    try {
+      const emitResult = await emitInvoice(saleId!);
+      if ("url" in emitResult && emitResult.url) {
+        invoiceUrl = emitResult.url;
+      }
+    } catch (emitErr) {
+      console.error("Emissão NFC-e falhou (venda registrada):", emitErr);
+      // Não falha a venda: cupom não fiscal segue para impressão
+    }
+
+    return {
+      success: true,
+      saleId: saleId!,
+      message: "Venda concluída!",
+      invoiceUrl,
+    };
   } catch (err) {
     console.error("Erro ao finalizar venda:", err);
     const message =
@@ -231,6 +249,8 @@ export type SaleReceiptData = {
   total: number;
   date: Date;
   orderId: string;
+  /** URL do DANFE quando a venda teve NFC-e emitida */
+  invoiceUrl?: string | null;
 };
 
 export async function getSaleForReceipt(
@@ -246,6 +266,7 @@ export async function getSaleForReceipt(
       createdAt: sales.createdAt,
       storeId: sales.storeId,
       organizationId: sales.organizationId,
+      invoiceUrl: sales.invoiceUrl,
     })
     .from(sales)
     .where(
@@ -317,6 +338,7 @@ export async function getSaleForReceipt(
       total: totalReais,
       date: sale.createdAt ?? new Date(),
       orderId: sale.id,
+      invoiceUrl: sale.invoiceUrl ?? null,
     },
   };
 }

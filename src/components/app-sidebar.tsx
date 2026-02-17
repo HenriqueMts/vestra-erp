@@ -14,6 +14,7 @@ import {
   Users2,
   Package,
   LineChart,
+  CreditCard,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -25,11 +26,14 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { logout } from "@/actions/auth";
 
+type Role = "owner" | "manager" | "seller";
+
 interface AppSidebarProps {
   user: Readonly<{
     name: string;
     email: string;
     initials: string;
+    role?: Role;
   }>;
   logo: React.ReactNode;
 }
@@ -37,6 +41,7 @@ interface AppSidebarProps {
 export function AppSidebar({ user, logo }: Readonly<AppSidebarProps>) {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
+  const canSeeSales = user.role === "owner" || user.role === "manager";
 
   const isActive = (path: string) =>
     pathname === path || pathname.startsWith(`${path}/`);
@@ -48,19 +53,19 @@ export function AppSidebar({ user, logo }: Readonly<AppSidebarProps>) {
     <>
       <button
         onClick={toggleMenu}
-        className="md:hidden fixed top-4 right-4 z-50 p-2 bg-white shadow-sm border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+        className="md:hidden fixed top-4 right-4 z-50 p-2 bg-sidebar shadow-sm border border-sidebar-border rounded-lg hover:bg-sidebar-accent transition-colors"
         aria-label="Toggle menu"
       >
         {isOpen ? (
-          <X size={24} className="text-slate-600" />
+          <X size={24} className="text-sidebar-foreground" />
         ) : (
-          <Menu size={24} className="text-slate-600" />
+          <Menu size={24} className="text-sidebar-foreground" />
         )}
       </button>
 
       {isOpen && (
         <button
-          className="fixed inset-0 bg-slate-900/50 md:hidden z-40 backdrop-blur-sm transition-opacity"
+          className="fixed inset-0 bg-black/50 dark:bg-black/60 md:hidden z-40 backdrop-blur-sm transition-opacity"
           onClick={closeMenu}
           aria-label="Close menu"
           type="button"
@@ -68,7 +73,7 @@ export function AppSidebar({ user, logo }: Readonly<AppSidebarProps>) {
       )}
 
       <aside
-        className={`fixed md:static top-0 left-0 h-screen md:h-auto w-72 md:w-64 border-r border-slate-200 flex flex-col bg-white z-50 transition-transform duration-300 ease-in-out shadow-xl md:shadow-none ${
+        className={`fixed md:static top-0 left-0 h-screen md:h-auto w-72 md:w-64 border-r border-sidebar-border flex flex-col bg-sidebar z-50 transition-transform duration-300 ease-in-out shadow-xl md:shadow-none ${
           isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         }`}
       >
@@ -76,7 +81,7 @@ export function AppSidebar({ user, logo }: Readonly<AppSidebarProps>) {
           <div className="mt-14 md:mt-0 mb-2">{logo}</div>
 
           <nav className="flex-1 space-y-1 mt-6">
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-3 mb-3">
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-3 mb-3">
               Menu Principal
             </p>
 
@@ -85,56 +90,58 @@ export function AppSidebar({ user, logo }: Readonly<AppSidebarProps>) {
               onClick={closeMenu}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium text-sm transition-all ${
                 pathname === "/dashboard"
-                  ? "bg-slate-900 text-white shadow-md shadow-slate-900/20"
-                  : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+                  ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-md"
+                  : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
               }`}
             >
               <LayoutDashboard
                 size={18}
                 className={
                   pathname === "/dashboard"
-                    ? "text-slate-200"
-                    : "text-slate-400"
+                    ? "text-sidebar-primary-foreground"
+                    : "text-muted-foreground"
                 }
               />
               <span>Dashboard</span>
             </Link>
 
-            <Link
-              href="/dashboard/sales"
-              onClick={closeMenu}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium text-sm transition-all ${
-                isActive("/dashboard/sales")
-                  ? "bg-slate-900 text-white shadow-md shadow-slate-900/20"
-                  : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
-              }`}
-            >
-              <LineChart
-                size={18}
-                className={
+            {canSeeSales && (
+              <Link
+                href="/dashboard/sales"
+                onClick={closeMenu}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium text-sm transition-all ${
                   isActive("/dashboard/sales")
-                    ? "text-slate-200"
-                    : "text-slate-400"
-                }
-              />
-              <span>Resumo de Vendas</span>
-            </Link>
+                    ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-md"
+                    : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                }`}
+              >
+                <LineChart
+                  size={18}
+                  className={
+                    isActive("/dashboard/sales")
+                      ? "text-sidebar-primary-foreground"
+                      : "text-muted-foreground"
+                  }
+                />
+                <span>Resumo de Vendas</span>
+              </Link>
+            )}
 
             <Link
               href="/inventory/products"
               onClick={closeMenu}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium text-sm transition-all ${
                 isActive("/inventory/products")
-                  ? "bg-slate-900 text-white shadow-md shadow-slate-900/20"
-                  : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+                  ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-md"
+                  : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
               }`}
             >
               <Package
                 size={18}
                 className={
                   isActive("/inventory/products")
-                    ? "text-slate-200"
-                    : "text-slate-400"
+                    ? "text-sidebar-primary-foreground"
+                    : "text-muted-foreground"
                 }
               />
               <span>Produtos</span>
@@ -145,75 +152,97 @@ export function AppSidebar({ user, logo }: Readonly<AppSidebarProps>) {
               onClick={closeMenu}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium text-sm transition-all ${
                 isActive("/crm")
-                  ? "bg-slate-900 text-white shadow-md shadow-slate-900/20"
-                  : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+                  ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-md"
+                  : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
               }`}
             >
               <Users
                 size={18}
                 className={
-                  isActive("/crm") ? "text-slate-200" : "text-slate-400"
+                  isActive("/crm") ? "text-sidebar-primary-foreground" : "text-muted-foreground"
                 }
               />
               <span>Clientes</span>
             </Link>
-            <Link
-              href="/team"
-              onClick={closeMenu}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium text-sm transition-all ${
-                isActive("/team")
-                  ? "bg-slate-900 text-white shadow-md shadow-slate-900/20"
-                  : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
-              }`}
-            >
-              <Users2
-                size={18}
-                className={
-                  isActive("/team") ? "text-slate-200" : "text-slate-400"
-                }
-              />
-              <span>Time</span>
-            </Link>
+            {canSeeSales && (
+              <>
+                <Link
+                  href="/team"
+                  onClick={closeMenu}
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium text-sm transition-all ${
+                    isActive("/team")
+                      ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-md"
+                      : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                  }`}
+                >
+                  <Users2
+                    size={18}
+                    className={
+                      isActive("/team") ? "text-sidebar-primary-foreground" : "text-muted-foreground"
+                    }
+                  />
+                  <span>Time</span>
+                </Link>
 
-            <Link
-              href="/settings"
-              onClick={closeMenu}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium text-sm transition-all ${
-                isActive("/settings")
-                  ? "bg-slate-900 text-white shadow-md shadow-slate-900/20"
-                  : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
-              }`}
-            >
-              <Settings
-                size={18}
-                className={
-                  isActive("/settings") ? "text-slate-200" : "text-slate-400"
-                }
-              />
-              <span>Configurações</span>
-            </Link>
+                <Link
+                  href="/settings"
+                  onClick={closeMenu}
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium text-sm transition-all ${
+                    isActive("/settings")
+                      ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-md"
+                      : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                  }`}
+                >
+                  <Settings
+                    size={18}
+                    className={
+                      isActive("/settings") ? "text-sidebar-primary-foreground" : "text-muted-foreground"
+                    }
+                  />
+                  <span>Configurações</span>
+                </Link>
+
+                <Link
+                  href="/minha-conta"
+                  onClick={closeMenu}
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium text-sm transition-all ${
+                    isActive("/minha-conta")
+                      ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-md"
+                      : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                  }`}
+                >
+                  <CreditCard
+                    size={18}
+                    className={
+                      isActive("/minha-conta") ? "text-sidebar-primary-foreground" : "text-muted-foreground"
+                    }
+                  />
+                  <span>Plano de assinatura</span>
+                </Link>
+              </>
+            )}
           </nav>
 
-          <div className="border-t border-slate-100 pt-4 mt-auto">
+          <div className="border-t border-sidebar-border pt-4 mt-auto">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="flex items-center justify-between w-full p-2 rounded-xl hover:bg-slate-50 transition-all outline-none group cursor-pointer border border-transparent hover:border-slate-200">
+                <button className="flex items-center justify-between w-full p-2 rounded-xl hover:bg-sidebar-accent transition-all outline-none group cursor-pointer border border-transparent hover:border-sidebar-border">
                   <div className="flex items-center gap-3 overflow-hidden">
-                    <div className="w-9 h-9 min-w-9 rounded-lg bg-indigo-600 flex items-center justify-center font-bold text-white shadow-sm text-sm">
+                    <div className="w-9 h-9 min-w-9 rounded-lg bg-sidebar-primary flex items-center justify-center font-bold text-sidebar-primary-foreground shadow-sm text-sm">
                       {user.initials}
                     </div>
                     <div className="flex flex-col text-left truncate">
-                      <span className="text-xs font-bold text-slate-900 leading-none truncate mb-1">
+                      <span className="text-xs font-bold text-sidebar-foreground leading-none truncate mb-1">
                         {user.name}
                       </span>
-                      <span className="text-[10px] text-slate-500 truncate">
+                      <span className="text-[10px] text-muted-foreground truncate">
                         {user.email}
                       </span>
                     </div>
                   </div>
                   <MoreVertical
                     size={16}
-                    className="text-slate-400 group-hover:text-slate-600 transition-colors"
+                    className="text-muted-foreground group-hover:text-sidebar-foreground transition-colors"
                   />
                 </button>
               </DropdownMenuTrigger>
@@ -221,16 +250,16 @@ export function AppSidebar({ user, logo }: Readonly<AppSidebarProps>) {
               <DropdownMenuContent
                 align="end"
                 side="right"
-                className="w-56 mb-2 shadow-xl border-slate-200 rounded-xl"
+                className="w-56 mb-2 shadow-xl border-border rounded-xl bg-popover text-popover-foreground"
               >
-                <DropdownMenuLabel className="text-slate-500 font-semibold text-[10px] uppercase tracking-widest">
+                <DropdownMenuLabel className="text-muted-foreground font-semibold text-[10px] uppercase tracking-widest">
                   Minha Conta
                 </DropdownMenuLabel>
-                <DropdownMenuSeparator className="bg-slate-100" />
+                <DropdownMenuSeparator className="bg-border" />
 
                 <form action={logout}>
                   <button type="submit" className="w-full">
-                    <DropdownMenuItem className="gap-2 py-2.5 cursor-pointer text-red-600 focus:bg-red-50 focus:text-red-700 font-medium rounded-lg m-1">
+                    <DropdownMenuItem className="gap-2 py-2.5 cursor-pointer text-destructive focus:bg-destructive/10 focus:text-destructive font-medium rounded-lg m-1">
                       <LogOut size={16} />
                       Sair do Sistema
                     </DropdownMenuItem>

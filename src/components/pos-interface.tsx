@@ -659,7 +659,6 @@ export function POSInterface({
         subtotal={subtotal}
         onSuccess={() => {
           setCart([]);
-          setIsCheckoutOpen(false);
           router.refresh();
         }}
       />

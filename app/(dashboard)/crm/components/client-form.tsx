@@ -173,7 +173,7 @@ export function ClientForm({
       <div className="pt-4">
         <Button
           type="submit"
-          className="w-full bg-slate-900 text-white hover:bg-black py-4 sm:py-5 text-sm sm:text-base font-medium"
+          className="w-full bg-primary text-primary-foreground hover:bg-primary/90 py-4 sm:py-5 text-sm sm:text-base font-medium"
           disabled={isPending}
         >
           {isPending

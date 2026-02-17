@@ -14,59 +14,42 @@ import { Sparkles } from "lucide-react";
 
 const STORAGE_KEY = "jilem-modas-seen-update";
 
-/** Altere esta versão quando publicar novas notas; quem ainda não viu verá o modal. */
-const CURRENT_VERSION = "2025-02-10";
+/** Altere esta versão quando publicar novas notas; quem ainda não viu verá o modal na próxima vez que logar. */
+const CURRENT_VERSION = "2025-02-16";
 
 const UPDATES: { title: string; items: string[] }[] = [
   {
-    title: "Checkout (POS)",
+    title: "Nota fiscal (NFC-e) para lojas optantes",
     items: [
-      "Layout do modal de checkout ajustado: nome do cliente não fica mais sobre o botão.",
+      "Configuração em 3 passos: certificado digital A1, código CSC e ativação.",
+      "Dados fiscais opcionais (IE, endereço) para cadastro na Focus.",
+      "Cupom não fiscal sempre exibido após a venda; link da NFC-e no comprovante quando emitida.",
+      "Seção de dados fiscais (NCM, CFOP, etc.) no cadastro de produtos apenas para quem emite nota.",
     ],
   },
   {
-    title: "Caixa",
+    title: "Edição de lojas e filiais",
     items: [
-      "Abertura automática do caixa à meia-noite para facilitar o controle diário.",
+      "Agora é possível editar nome e endereço de cada loja.",
+      "Botão “Editar” no card da loja abre um modal para alterar os dados.",
+      "Matriz e filiais podem ser editadas; exclusão continua apenas para filiais.",
     ],
   },
   {
-    title: "POS e estoque",
+    title: "Edição de perfil da empresa",
     items: [
-      "POS vinculado à loja/estoque selecionado.",
-      "Estoque atualizado corretamente ao concluir uma venda.",
-      "Quantidade exibida no card do POS reflete o estoque real.",
+      "Novo botão “Editar” no card de dados da empresa (Configurações).",
+      "Modal para alterar razão social e CNPJ da empresa.",
+      "Upload do logo da empresa também dentro do mesmo modal.",
+      "CNPJ é usado na NFC-e e em documentos fiscais.",
     ],
   },
   {
-    title: "Equipe",
+    title: "Outras melhorias",
     items: [
-      "Exibição da loja real do funcionário no time.",
-    ],
-  },
-  {
-    title: "Produtos",
-    items: [
-      "Correções no cadastro de variantes de cor.",
-    ],
-  },
-  {
-    title: "POS responsivo",
-    items: [
-      "Melhorias de uso em telas menores.",
-    ],
-  },
-  {
-    title: "Dashboard",
-    items: [
-      "Aviso de estoque baixo corrigido.",
-    ],
-  },
-  {
-    title: "Transferência e movimentação",
-    items: [
-      "Transferência de produtos entre lojas.",
-      "Troca no POS: devolução de qualquer produto (entrada no estoque) e saída do produto da troca (com controle de estoque).",
+      "Checkout: comprovante (cupom não fiscal) exibido após finalizar a venda.",
+      "Produtos: SKU preenchido na edição, com opção “Alterar código” para editar.",
+      "Transferência entre lojas, troca/devolução no POS e controle de estoque por loja.",
     ],
   },
 ];
@@ -103,12 +86,12 @@ export function UpdateNotesModal() {
             Confira as últimas atualizações, correções e melhorias no sistema.
           </DialogDescription>
         </DialogHeader>
-        <div className="max-h-[50vh] overflow-y-auto rounded-md border bg-slate-50/80 p-3 text-sm">
+        <div className="max-h-[50vh] overflow-y-auto rounded-md border bg-muted/80 p-3 text-sm">
           <ul className="space-y-4">
             {UPDATES.map((section) => (
               <li key={section.title}>
-                <h4 className="font-semibold text-slate-800">{section.title}</h4>
-                <ul className="mt-1 list-inside list-disc space-y-0.5 text-slate-600">
+                <h4 className="font-semibold text-foreground">{section.title}</h4>
+                <ul className="mt-1 list-inside list-disc space-y-0.5 text-muted-foreground">
                   {section.items.map((item) => (
                     <li key={`${section.title}-${item}`}>{item}</li>
                   ))}

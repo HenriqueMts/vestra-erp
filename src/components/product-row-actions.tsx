@@ -64,6 +64,10 @@ interface ProductRowActionsProps {
     sizeId: string | null;
     inventory: Array<{ id: string; storeId: string; quantity: number }>;
   }>;
+  ncm?: string | null;
+  origin?: string | null;
+  cfop?: string | null;
+  cest?: string | null;
   organizationId: string;
   options: ProductOptions;
 }
@@ -81,6 +85,10 @@ export function ProductRowActions({
   images = [],
   inventory = [],
   variants = [],
+  ncm = null,
+  origin = null,
+  cfop = null,
+  cest = null,
   organizationId,
   options,
 }: Readonly<ProductRowActionsProps>) {
@@ -137,15 +145,20 @@ export function ProductRowActions({
     images,
     inventory,
     variants,
+    sku: sku ?? undefined,
+    ncm: ncm ?? undefined,
+    origin: origin ?? undefined,
+    cfop: cfop ?? undefined,
+    cest: cest ?? undefined,
   };
 
   return (
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="h-8 w-8 p-0 hover:bg-slate-100">
+          <Button variant="ghost" className="h-8 w-8 p-0 hover:bg-muted">
             <span className="sr-only">Abrir menu</span>
-            <MoreHorizontal className="h-4 w-4 text-slate-400" />
+            <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-48 sm:w-56">
@@ -160,7 +173,7 @@ export function ProductRowActions({
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() => setIsBarcodeOpen(true)}
-            className="cursor-pointer gap-2 text-slate-700 text-sm"
+            className="cursor-pointer gap-2 text-foreground text-sm"
           >
             <Barcode className="h-4 w-4" /> Imprimir etiqueta (cód. barras)
           </DropdownMenuItem>
@@ -172,14 +185,14 @@ export function ProductRowActions({
               setTransferQty("");
               setIsTransferOpen(true);
             }}
-            className="cursor-pointer gap-2 text-slate-700 text-sm"
+            className="cursor-pointer gap-2 text-foreground text-sm"
           >
             <Truck className="h-4 w-4" /> Transferir para outra loja
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem
             onClick={() => setIsDeleteOpen(true)}
-            className="cursor-pointer gap-2 text-red-600 text-sm"
+            className="cursor-pointer gap-2 text-destructive text-sm"
           >
             <Trash2 className="h-4 w-4" /> Excluir
           </DropdownMenuItem>
@@ -187,7 +200,7 @@ export function ProductRowActions({
       </DropdownMenu>
 
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-        <DialogContent className="w-[95vw] sm:w-[90vw] sm:max-w-[800px] lg:max-w-[900px] bg-white max-h-[90vh] overflow-y-auto p-4 sm:p-6">
+        <DialogContent className="w-[95vw] sm:w-[90vw] sm:max-w-[800px] lg:max-w-[900px] bg-card max-h-[90vh] overflow-y-auto p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle className="text-xl sm:text-2xl">
               Editar Produto
@@ -223,7 +236,7 @@ export function ProductRowActions({
       />
 
       <Dialog open={isTransferOpen} onOpenChange={setIsTransferOpen}>
-        <DialogContent className="bg-white max-w-md">
+        <DialogContent className="bg-card max-w-md">
           <DialogHeader>
             <DialogTitle>Transferir para outra loja</DialogTitle>
             <DialogDescription>
@@ -392,7 +405,7 @@ export function ProductRowActions({
       </Dialog>
 
       <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
-        <AlertDialogContent className="bg-white w-[90vw] sm:w-full max-w-md">
+        <AlertDialogContent className="bg-card w-[90vw] sm:w-full max-w-md">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-lg sm:text-xl">
               Você tem certeza?
@@ -407,7 +420,7 @@ export function ProductRowActions({
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
-              className="bg-red-600 text-white w-full sm:w-auto"
+              className="bg-destructive text-destructive-foreground w-full sm:w-auto"
             >
               Excluir
             </AlertDialogAction>

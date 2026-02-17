@@ -95,11 +95,11 @@ export function ClientRowActions({
         <DropdownMenuTrigger asChild>
           <Button
             variant="ghost"
-            className="h-8 w-8 p-0 hover:bg-slate-100"
+            className="h-8 w-8 p-0 hover:bg-muted"
             title="Mais ações"
           >
             <span className="sr-only">Abrir menu</span>
-            <MoreHorizontal className="h-4 w-4 text-slate-400" />
+            <MoreHorizontal className="h-4 w-4 text-muted-foreground" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-48 sm:w-56">
@@ -111,7 +111,7 @@ export function ClientRowActions({
             onClick={handleSendEmail}
             className="cursor-pointer gap-2 text-xs sm:text-sm"
           >
-            <Mail className="h-4 w-4 text-slate-500 shrink-0" /> Enviar E-mail
+            <Mail className="h-4 w-4 text-muted-foreground shrink-0" /> Enviar E-mail
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={handleWhatsApp}
@@ -139,7 +139,7 @@ export function ClientRowActions({
       </DropdownMenu>
 
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-        <DialogContent className="w-[95vw] sm:max-w-[500px] bg-white max-h-[90vh] overflow-y-auto">
+        <DialogContent className="w-[95vw] sm:max-w-[500px] bg-card max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-lg sm:text-xl">
               Editar Cliente
@@ -157,7 +157,7 @@ export function ClientRowActions({
       </Dialog>
 
       <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
-        <AlertDialogContent className="bg-white w-[95vw] sm:max-w-[425px]">
+        <AlertDialogContent className="bg-card w-[95vw] sm:max-w-[425px]">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-lg sm:text-xl">
               Você tem certeza?
@@ -165,7 +165,7 @@ export function ClientRowActions({
             <AlertDialogDescription className="text-xs sm:text-sm">
               Essa ação não pode ser desfeita. Isso excluirá permanentemente o
               cliente
-              <span className="font-bold text-slate-900"> {name} </span>e
+              <span className="font-bold text-foreground"> {name} </span>e
               removerá seus dados dos nossos servidores.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -175,7 +175,7 @@ export function ClientRowActions({
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
-              className="ml-2 bg-red-600 hover:bg-red-700 text-white text-xs sm:text-sm"
+              className="ml-2 bg-destructive hover:bg-destructive/90 text-destructive-foreground text-xs sm:text-sm"
             >
               Sim, excluir cliente
             </AlertDialogAction>

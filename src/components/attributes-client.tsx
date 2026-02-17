@@ -135,7 +135,7 @@ export function AttributesClient({
               </div>
               <Button
                 onClick={handleAddColor}
-                className="w-full bg-slate-900 text-white"
+                className="w-full bg-primary text-primary-foreground"
               >
                 <Plus size={16} className="mr-2" /> Adicionar
               </Button>
@@ -149,7 +149,7 @@ export function AttributesClient({
             </CardHeader>
             <CardContent>
               {colorsList.length === 0 ? (
-                <p className="text-slate-500 text-sm">
+                <p className="text-muted-foreground text-sm">
                   Nenhuma cor cadastrada.
                 </p>
               ) : (
@@ -158,7 +158,7 @@ export function AttributesClient({
                     (color: { id: string; name: string; hex: string }) => (
                       <div
                         key={color.id}
-                        className="flex items-center justify-between p-3 border rounded-lg bg-slate-50"
+                        className="flex items-center justify-between p-3 border rounded-lg bg-muted"
                       >
                         <div className="flex items-center gap-3">
                           <div
@@ -171,7 +171,7 @@ export function AttributesClient({
                         </div>
                         <button
                           onClick={() => handleDeleteColor(color.id)}
-                          className="text-slate-400 hover:text-red-500"
+                          className="text-muted-foreground hover:text-destructive"
                         >
                           <Trash2 size={16} />
                         </button>
@@ -213,13 +213,13 @@ export function AttributesClient({
                   value={sizeOrder}
                   onChange={(e) => setSizeOrder(Number(e.target.value))}
                 />
-                <p className="text-[10px] text-slate-500">
+                <p className="text-[10px] text-muted-foreground">
                   Menor número aparece primeiro.
                 </p>
               </div>
               <Button
                 onClick={handleAddSize}
-                className="w-full bg-slate-900 text-white"
+                className="w-full bg-primary text-primary-foreground"
               >
                 <Plus size={16} className="mr-2" /> Adicionar
               </Button>
@@ -233,7 +233,7 @@ export function AttributesClient({
             </CardHeader>
             <CardContent>
               {sizesList.length === 0 ? (
-                <p className="text-slate-500 text-sm">
+                <p className="text-muted-foreground text-sm">
                   Nenhum tamanho cadastrado.
                 </p>
               ) : (
@@ -241,14 +241,14 @@ export function AttributesClient({
                   {sizesList.map((size: { id: string; name: string }) => (
                     <div
                       key={size.id}
-                      className="flex items-center gap-2 p-2 px-4 border rounded-lg bg-white shadow-sm min-w-[80px] justify-between"
+                      className="flex items-center gap-2 p-2 px-4 border rounded-lg bg-card shadow-sm min-w-[80px] justify-between"
                     >
-                      <span className="font-bold text-slate-900">
+                      <span className="font-bold text-foreground">
                         {size.name}
                       </span>
                       <button
                         onClick={() => handleDeleteSize(size.id)}
-                        className="text-slate-300 hover:text-red-500 ml-2"
+                        className="text-muted-foreground hover:text-destructive ml-2"
                       >
                         <Trash2 size={14} />
                       </button>

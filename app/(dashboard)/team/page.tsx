@@ -20,6 +20,7 @@ export default async function TeamPage() {
   const session = await getUserSession();
 
   if (!session) redirect("/login");
+  if (session.role === "seller") redirect("/dashboard");
 
   // 1. Buscar Lojas (para o modal de convite)
   const organizationStores = await db
@@ -49,10 +50,10 @@ export default async function TeamPage() {
     <div className="w-full min-h-screen space-y-6 sm:space-y-8 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-6">
         <div>
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-900">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground">
             Equipe
           </h1>
-          <p className="text-sm sm:text-base text-slate-600 mt-1">
+          <p className="text-sm sm:text-base text-muted-foreground mt-1">
             Gerencie quem tem acesso ao sistema e suas lojas.
           </p>
         </div>
@@ -83,19 +84,19 @@ export default async function TeamPage() {
               key={member.id}
               className={`overflow-hidden group relative transition-all hover:shadow-md ${
                 !member.userId
-                  ? "border-dashed border-slate-300 bg-slate-50/50"
+                  ? "border-dashed border-border bg-muted/50"
                   : ""
               }`}
             >
               <CardHeader className="flex flex-row items-center gap-4 pb-2">
-                <Avatar className="h-10 w-10 border border-slate-200">
-                  <AvatarFallback className="bg-white text-slate-700 font-bold text-xs">
+                <Avatar className="h-10 w-10 border border-border">
+                  <AvatarFallback className="bg-card text-foreground font-bold text-xs">
                     {initials}
                   </AvatarFallback>
                 </Avatar>
 
                 <div className="flex flex-col min-w-0">
-                  <CardTitle className="text-sm sm:text-base truncate pr-6 font-medium text-slate-900">
+                  <CardTitle className="text-sm sm:text-base truncate pr-6 font-medium text-foreground">
                     {displayName}
                   </CardTitle>
                   <CardDescription className="text-xs sm:text-sm truncate">
@@ -131,7 +132,7 @@ export default async function TeamPage() {
 
                   {/* Loja real do funcionário (defaultStoreId), não matriz por padrão */}
                   {member.storeName ? (
-                    <div className="flex items-center gap-1.5 text-xs text-slate-500 mt-1">
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1">
                       <MapPin size={12} />
                       <span className="truncate" title={member.storeName}>
                         Loja: {member.storeName}

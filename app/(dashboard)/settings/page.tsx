@@ -6,65 +6,70 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { LogoUploader } from "@/components/logo-uploader";
+import { OrganizationCard } from "@/components/organization-card";
 import { StoresSettings } from "@/components/stores-settings";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { stores } from "@/db/schema";
 import { eq, asc } from "drizzle-orm";
-import Link from "next/link"; // <--- Importante
-import { Button } from "@/components/ui/button"; // <--- Importante
-import { Palette, ArrowRight, Tag } from "lucide-react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Palette, ArrowRight, Tag, FileText } from "lucide-react";
+import { getOrganization } from "@/actions/organization";
 
 export default async function SettingsPage() {
   const session = await getUserSession();
 
   if (!session) redirect("/login");
+  if (session.role === "seller") redirect("/dashboard");
 
   const isOwner = session.role === "owner";
   const canManageAttributes = ["owner", "manager"].includes(session.role);
 
-  // Buscar lojas da organização
-  const organizationStores = await db
-    .select()
-    .from(stores)
-    .where(eq(stores.organizationId, session.organizationId))
-    .orderBy(asc(stores.createdAt));
+  // Buscar lojas e dados da organização
+  const [organizationStores, orgResult] = await Promise.all([
+    db
+      .select()
+      .from(stores)
+      .where(eq(stores.organizationId, session.organizationId))
+      .orderBy(asc(stores.createdAt)),
+    getOrganization(),
+  ]);
+
+  const orgData = "error" in orgResult ? null : orgResult;
+  const orgName = orgData?.name ?? "";
+  const orgDocument = orgData?.document ?? "";
+  const orgLogoUrl = orgData?.logoUrl ?? session.orgLogo ?? null;
 
   return (
     <div className="w-full min-h-screen space-y-6 sm:space-y-8 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
       <div className="space-y-2">
-        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-900">
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground">
           Configurações
         </h1>
-        <p className="text-sm sm:text-base text-slate-600">
+        <p className="text-sm sm:text-base text-muted-foreground">
           Gerencie os dados, lojas e atributos da sua organização.
         </p>
       </div>
 
       <div className="grid gap-6">
-        {/* CARD 1: IDENTIDADE VISUAL */}
+        {/* CARD 1: DADOS DA EMPRESA (nome + logo + botão Editar) */}
         <Card>
           <CardHeader className="pb-3 sm:pb-4">
             <CardTitle className="text-lg sm:text-xl">
-              Identidade Visual
+              Dados da empresa
             </CardTitle>
             <CardDescription className="text-sm sm:text-base">
-              Este logo será exibido no menu lateral e nos relatórios.
+              Nome e logo. Use Editar para alterar razão social e CNPJ (usado na NFC-e).
             </CardDescription>
           </CardHeader>
           <CardContent className="px-4 sm:px-6">
-            {isOwner ? (
-              <LogoUploader
-                initialUrl={session.orgLogo}
-                orgName={session.orgName || "Sua Empresa"}
-              />
-            ) : (
-              <div className="text-xs sm:text-sm text-amber-700 bg-amber-50 p-3 sm:p-4 rounded-lg border border-amber-100 flex items-center gap-2">
-                <span>🔒</span>
-                Apenas o dono da empresa pode alterar o logotipo.
-              </div>
-            )}
+            <OrganizationCard
+              orgName={orgName}
+              orgDocument={orgDocument}
+              orgLogoUrl={orgLogoUrl}
+              isOwner={isOwner}
+            />
           </CardContent>
         </Card>
 
@@ -83,7 +88,7 @@ export default async function SettingsPage() {
             {isOwner ? (
               <StoresSettings initialStores={organizationStores} />
             ) : (
-              <div className="text-xs sm:text-sm text-slate-500 italic">
+              <div className="text-xs sm:text-sm text-muted-foreground italic">
                 Você não tem permissão para gerenciar lojas.
               </div>
             )}
@@ -94,7 +99,7 @@ export default async function SettingsPage() {
         <Card>
           <CardHeader className="pb-3 sm:pb-4">
             <div className="flex items-center gap-2">
-              <div className="p-2 bg-slate-100 rounded-lg text-slate-600 hidden sm:block">
+              <div className="p-2 bg-muted rounded-lg text-muted-foreground hidden sm:block">
                 <Tag size={20} />
               </div>
               <div>
@@ -110,14 +115,14 @@ export default async function SettingsPage() {
           </CardHeader>
           <CardContent className="px-4 sm:px-6">
             {canManageAttributes ? (
-              <div className="flex items-center justify-between bg-slate-50 p-4 rounded-lg border border-slate-100">
-                <div className="text-sm text-slate-600">
+              <div className="flex items-center justify-between bg-muted p-4 rounded-lg border border-border">
+                <div className="text-sm text-muted-foreground">
                   Crie e edite categorias de produtos.
                 </div>
                 <Link href="/settings/categories">
                   <Button
                     variant="outline"
-                    className="gap-2 border-slate-300 hover:bg-white hover:text-indigo-600"
+                    className="gap-2 border-border hover:bg-background hover:text-primary"
                   >
                     Gerenciar Categorias
                     <ArrowRight size={16} />
@@ -125,7 +130,7 @@ export default async function SettingsPage() {
                 </Link>
               </div>
             ) : (
-              <div className="text-xs sm:text-sm text-slate-500 italic">
+              <div className="text-xs sm:text-sm text-muted-foreground italic">
                 Apenas gerentes e donos podem configurar categorias.
               </div>
             )}
@@ -136,7 +141,7 @@ export default async function SettingsPage() {
         <Card>
           <CardHeader className="pb-3 sm:pb-4">
             <div className="flex items-center gap-2">
-              <div className="p-2 bg-indigo-50 rounded-lg text-indigo-600 hidden sm:block">
+              <div className="p-2 bg-primary/10 rounded-lg text-primary hidden sm:block">
                 <Palette size={20} />
               </div>
               <div>
@@ -153,14 +158,14 @@ export default async function SettingsPage() {
           </CardHeader>
           <CardContent className="px-4 sm:px-6">
             {canManageAttributes ? (
-              <div className="flex items-center justify-between bg-slate-50 p-4 rounded-lg border border-slate-100">
-                <div className="text-sm text-slate-600">
+              <div className="flex items-center justify-between bg-muted p-4 rounded-lg border border-border">
+                <div className="text-sm text-muted-foreground">
                   Gerencie a paleta de cores e grade de tamanhos.
                 </div>
                 <Link href="/settings/attributes">
                   <Button
                     variant="outline"
-                    className="gap-2 border-slate-300 hover:bg-white hover:text-indigo-600"
+                    className="gap-2 border-border hover:bg-background hover:text-primary"
                   >
                     Gerenciar Atributos
                     <ArrowRight size={16} />
@@ -168,8 +173,50 @@ export default async function SettingsPage() {
                 </Link>
               </div>
             ) : (
-              <div className="text-xs sm:text-sm text-slate-500 italic">
+              <div className="text-xs sm:text-sm text-muted-foreground italic">
                 Apenas gerentes e donos podem configurar atributos.
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* --- CARD 5: NOTA FISCAL (NFC-e) --- */}
+        <Card>
+          <CardHeader className="pb-3 sm:pb-4">
+            <div className="flex items-center gap-2">
+              <div className="p-2 bg-primary/10 rounded-lg text-primary hidden sm:block">
+                <FileText size={20} />
+              </div>
+              <div>
+                <CardTitle className="text-lg sm:text-xl">
+                  Nota Fiscal ao Consumidor (NFC-e)
+                </CardTitle>
+                <CardDescription className="text-sm sm:text-base mt-1">
+                  Certificado digital e código CSC: em poucos passos o Vestra passa a emitir
+                  suas NFC-e nas vendas. Quem não emite nota pode deixar desativado.
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="px-4 sm:px-6">
+            {canManageAttributes ? (
+              <div className="flex items-center justify-between bg-muted p-4 rounded-lg border border-border">
+                <div className="text-sm text-muted-foreground">
+                  Certificado digital (.pfx), senha e código CSC.
+                </div>
+                <Link href="/settings/invoice">
+                  <Button
+                    variant="outline"
+                    className="gap-2 border-border hover:bg-background hover:text-primary"
+                  >
+                    Configurar em 3 passos
+                    <ArrowRight size={16} />
+                  </Button>
+                </Link>
+              </div>
+            ) : (
+              <div className="text-xs sm:text-sm text-muted-foreground italic">
+                Apenas gerentes e donos podem configurar emissão de nota fiscal.
               </div>
             )}
           </CardContent>

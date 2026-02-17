@@ -73,10 +73,10 @@ export function ProductFilter() {
             <FormItem className="w-full sm:w-[200px] lg:w-[250px] space-y-0">
               <FormControl>
                 <div className="relative">
-                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-500" />
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                   <Input
                     placeholder="Buscar produto..."
-                    className="pl-9 bg-white text-sm sm:text-base"
+                    className="pl-9 bg-background text-sm sm:text-base"
                     {...field}
                   />
                 </div>
@@ -98,7 +98,7 @@ export function ProductFilter() {
                 defaultValue={field.value}
               >
                 <FormControl>
-                  <SelectTrigger className="bg-white text-sm sm:text-base">
+                  <SelectTrigger className="bg-background text-sm sm:text-base">
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>
                 </FormControl>

@@ -83,6 +83,11 @@ export async function saveProduct(
 
     const productSku = data.sku?.trim() || null;
 
+    const ncm = (data.ncm ?? "00000000").replace(/\D/g, "").slice(0, 8).padEnd(8, "0");
+    const origin = data.origin ?? "0";
+    const cfop = data.cfop?.trim() || "5102";
+    const cest = data.cest?.trim() || null;
+
     if (productId) {
       await db
         .update(products)
@@ -95,6 +100,10 @@ export async function saveProduct(
           imageUrl: coverImage,
           status: data.status,
           sku: productSku,
+          ncm,
+          origin,
+          cfop,
+          cest,
         })
         .where(eq(products.id, productId));
     } else {
@@ -110,6 +119,10 @@ export async function saveProduct(
           imageUrl: coverImage,
           status: data.status,
           sku: productSku,
+          ncm,
+          origin,
+          cfop,
+          cest,
         })
         .returning({ id: products.id });
 

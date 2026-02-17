@@ -37,10 +37,10 @@ export function ClientFilter() {
 
   return (
     <div className="relative w-full sm:w-auto">
-      <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-400 z-10" />
+      <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground z-10" />
       <Input
         placeholder="Buscar cliente..."
-        className="pl-9 bg-white text-xs sm:text-sm"
+        className="pl-9 bg-background text-xs sm:text-sm"
         defaultValue={searchParams.get("q")?.toString()}
         onChange={(e) => {
           handleSearch(e.target.value);

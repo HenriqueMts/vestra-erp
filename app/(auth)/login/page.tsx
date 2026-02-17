@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { login } from "@/actions/auth";
+import { login, checkNeedsPasswordChange } from "@/actions/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -52,12 +52,14 @@ export default function LoginPage() {
     const supabase = createClient();
     supabase.auth
       .setSession({ access_token: accessToken, refresh_token: refreshToken })
-      .then(() => {
+      .then(async () => {
         const url = new URL(globalThis.window.location.href);
         url.hash = "";
         url.searchParams.delete("error");
         globalThis.window.history.replaceState({}, "", url.pathname + url.search);
-        if (type === "invite") {
+        const isInviteFromHash = type === "invite";
+        const { needsPasswordChange } = await checkNeedsPasswordChange();
+        if (isInviteFromHash || needsPasswordChange) {
           router.replace("/update-password");
         } else {
           router.replace("/pos");
