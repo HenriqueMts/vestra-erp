@@ -107,36 +107,36 @@ export default function LoginPage() {
 
   if (handlingAuth) {
     return (
-      <div className="flex min-h-screen w-full items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 px-4 py-8 sm:py-0">
+      <div className="flex min-h-screen w-full items-center justify-center bg-gradient-to-br from-background to-muted px-4 py-8 sm:py-0">
         <div className="flex flex-col items-center gap-4">
-          <Loader2 className="w-10 h-10 animate-spin text-slate-600" />
-          <p className="text-sm text-slate-600">Confirmando acesso...</p>
+          <Loader2 className="w-10 h-10 animate-spin text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">Confirmando acesso...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen w-full items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 px-4 py-8 sm:py-0">
+    <div className="flex min-h-screen w-full items-center justify-center bg-gradient-to-br from-background to-muted px-4 py-8 sm:py-0">
       <div className="w-full max-w-md space-y-6">
         <div className="flex flex-col items-center space-y-3 text-center">
-          <div className="flex items-center justify-center gap-3 bg-gradient-to-br from-slate-900 to-slate-800 p-4 rounded-2xl shadow-lg">
-            <Hexagon className="w-10 h-10 sm:w-12 sm:h-12 text-white" />
+          <div className="flex items-center justify-center gap-3 bg-gradient-to-br from-primary to-primary/80 p-4 rounded-2xl shadow-lg">
+            <Hexagon className="w-10 h-10 sm:w-12 sm:h-12 text-primary-foreground" />
           </div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">
             Vestra ERP
           </h1>
-          <p className="text-xs sm:text-sm font-medium text-slate-500 uppercase tracking-widest">
+          <p className="text-xs sm:text-sm font-medium text-muted-foreground uppercase tracking-widest">
             Acesso Restrito
           </p>
         </div>
 
-        <Card className="border-slate-200 shadow-2xl">
+        <Card className="border-border shadow-2xl">
           <CardHeader className="space-y-2 pb-3">
-            <CardTitle className="text-xl sm:text-2xl text-center text-slate-800">
+            <CardTitle className="text-xl sm:text-2xl text-center text-foreground">
               Acessar Painel
             </CardTitle>
-            <CardDescription className="text-center text-slate-600 text-sm sm:text-base">
+            <CardDescription className="text-center text-muted-foreground text-sm sm:text-base">
               Digite suas credenciais de acesso.
             </CardDescription>
           </CardHeader>
@@ -153,7 +153,7 @@ export default function LoginPage() {
                   type="email"
                   required
                   placeholder="seu@email.com"
-                  className="bg-slate-50/50 text-sm sm:text-base"
+                  className="bg-muted/60 text-sm sm:text-base"
                 />
               </div>
               <div className="space-y-2">
@@ -165,7 +165,7 @@ export default function LoginPage() {
                   name="password"
                   type="password"
                   required
-                  className="bg-slate-50/50 text-sm sm:text-base"
+                  className="bg-muted/60 text-sm sm:text-base"
                 />
               </div>
             </CardContent>
@@ -174,7 +174,7 @@ export default function LoginPage() {
               <Button
                 type="submit"
                 disabled={isPending}
-                className="w-full bg-slate-900 hover:bg-black text-white py-5 sm:py-6 text-sm sm:text-base font-medium"
+                className="w-full bg-primary hover:bg-primary/90 text-primary-foreground py-5 sm:py-6 text-sm sm:text-base font-medium"
               >
                 {isPending ? (
                   <span className="flex items-center gap-2">

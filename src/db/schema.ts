@@ -50,6 +50,8 @@ export const organizations = pgTable("organizations", {
   asaasSubscriptionId: text("asaas_subscription_id"),
   planValueCents: integer("plan_value_cents"),
   planBillingDay: integer("plan_billing_day"),
+  billingStatus: text("billing_status").$type<"active" | "overdue" | "suspended">().default("active"),
+  accessSuspendedAt: timestamp("access_suspended_at"),
 });
 
 export const stores = pgTable("stores", {

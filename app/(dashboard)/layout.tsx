@@ -16,6 +16,10 @@ export default async function DashboardLayout({
   if (session.mustChangePassword) {
     redirect("/update-password");
   }
+  // Bloquear acesso se billingStatus = suspended (exceto em /minha-conta)
+  if (session.billingStatus === "suspended") {
+    redirect("/minha-conta?blocked=suspended");
+  }
 
   const displayName =
     session.profile?.name ||

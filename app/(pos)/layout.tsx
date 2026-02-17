@@ -12,6 +12,10 @@ export default async function POSLayout({
   if (!session) {
     redirect("/login");
   }
+  // Bloquear acesso se billingStatus = suspended
+  if (session.billingStatus === "suspended") {
+    redirect("/minha-conta?blocked=suspended");
+  }
 
   return (
     <div className="min-h-screen w-full bg-slate-100 text-slate-900 font-sans">

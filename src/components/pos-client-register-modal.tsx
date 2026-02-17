@@ -104,7 +104,7 @@ export function PosClientRegisterModal({
         <DialogHeader>
           <DialogTitle>Cadastrar cliente</DialogTitle>
         </DialogHeader>
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-muted-foreground">
           Cliente não encontrado. Preencha os dados para cadastrar e continuar a
           venda.
         </p>

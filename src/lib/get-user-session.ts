@@ -37,6 +37,12 @@ export async function getUserSession() {
     redirect("/login?error=no_org");
   }
 
+  // 3. Obter status de cobrança
+  const billingStatus = (member.organization.billingStatus ?? "active") as "active" | "overdue" | "suspended";
+  
+  // Nota: O bloqueio de acesso quando suspended é feito nos layouts (dashboard, POS)
+  // A página /minha-conta permite acesso mesmo suspenso para ver faturas
+  
   return {
     user,
     profile,
@@ -46,7 +52,7 @@ export async function getUserSession() {
     storeId: member.defaultStoreId,
     role: member.role,
     orgSlug: member.organization.slug,
-
+    billingStatus,
     mustChangePassword: profile?.mustChangePassword || false,
   };
 }

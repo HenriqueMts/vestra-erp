@@ -13,21 +13,21 @@ export async function OrganizationLogo() {
 
   return (
     <div className="flex items-center gap-3 px-2 mb-6">
-      <Avatar className="h-10 w-10 border border-slate-200 rounded-lg">
+      <Avatar className="h-10 w-10 border border-border rounded-lg">
         <AvatarImage
           src={session.orgLogo || ""}
           alt={session.orgName}
           className="object-cover"
         />
-        <AvatarFallback className="rounded-lg bg-indigo-600 text-white font-bold">
+        <AvatarFallback className="rounded-lg bg-primary text-primary-foreground font-bold">
           {initials}
         </AvatarFallback>
       </Avatar>
       <div className="flex flex-col">
-        <span className="font-bold text-sm text-slate-900 leading-tight">
+        <span className="font-bold text-sm text-foreground leading-tight">
           {session.orgName}
         </span>
-        <span className="text-[10px] uppercase text-slate-500 font-semibold tracking-wider">
+        <span className="text-[10px] uppercase text-muted-foreground font-semibold tracking-wider">
           Plano {session.role === "owner" ? "Enterprise" : "Membro"}
         </span>
       </div>
