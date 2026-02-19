@@ -1,4 +1,5 @@
 import { getUserSession } from "@/lib/get-user-session";
+import { isAdmin } from "@/lib/check-access";
 import { db } from "@/db";
 import { members, profiles, stores } from "@/db/schema";
 import { eq } from "drizzle-orm";
@@ -17,10 +18,12 @@ import { MapPin, ShieldAlert } from "lucide-react";
 import { DeleteMemberButton } from "@/components/delete-member-button";
 
 export default async function TeamPage() {
+  const adminCheck = await isAdmin();
   const session = await getUserSession();
 
   if (!session) redirect("/login");
-  if (session.role === "seller") redirect("/dashboard");
+  // Admin ou owner/manager podem acessar, seller não
+  if (!adminCheck && session.role === "seller") redirect("/dashboard");
 
   // 1. Buscar Lojas (para o modal de convite)
   const organizationStores = await db
@@ -44,7 +47,7 @@ export default async function TeamPage() {
     .leftJoin(stores, eq(members.defaultStoreId, stores.id)) // Join para pegar nome da loja
     .where(eq(members.organizationId, session.organizationId));
 
-  const isManagerOrOwner = ["owner", "manager"].includes(session.role);
+  const isManagerOrOwner = adminCheck || ["owner", "manager"].includes(session.role);
 
   return (
     <div className="w-full min-h-screen space-y-6 sm:space-y-8 p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">

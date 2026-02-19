@@ -18,6 +18,7 @@ import {
 import { emitInvoice } from "@/actions/invoice";
 import { eq, and, isNull, gte, lte, sql, desc } from "drizzle-orm";
 import { getUserSession } from "@/lib/get-user-session";
+import { getStartOfDayBrazil, getEndOfDayBrazil } from "@/lib/day-in-brazil";
 import { revalidatePath } from "next/cache";
 
 export type PaymentMethod = "pix" | "credit" | "debit" | "cash";
@@ -67,25 +68,8 @@ export async function completeSale(
   const totalCents = baseTotalCents + interestCents;
 
   try {
-    const now = new Date();
-    const startOfDay = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate(),
-      0,
-      0,
-      0,
-      0,
-    );
-    const endOfDay = new Date(
-      now.getFullYear(),
-      now.getMonth(),
-      now.getDate(),
-      23,
-      59,
-      59,
-      999,
-    );
+    const startOfDay = getStartOfDayBrazil();
+    const endOfDay = getEndOfDayBrazil();
 
     const [existingClosure] = await db
       .select({ id: cashClosures.id })
@@ -356,25 +340,8 @@ export async function closeDailyCash(storeId?: string | null) {
     return { error: "Nenhuma loja selecionada para fechamento de caixa." };
   }
 
-  const now = new Date();
-  const startOfDay = new Date(
-    now.getFullYear(),
-    now.getMonth(),
-    now.getDate(),
-    0,
-    0,
-    0,
-    0,
-  );
-  const endOfDay = new Date(
-    now.getFullYear(),
-    now.getMonth(),
-    now.getDate(),
-    23,
-    59,
-    59,
-    999,
-  );
+  const startOfDay = getStartOfDayBrazil();
+  const endOfDay = getEndOfDayBrazil();
 
   // Verifica se já existe fechamento para hoje nessa loja
   const [existingClosure] = await db
@@ -453,13 +420,9 @@ export async function getDailySales(storeId?: string | null) {
     return { error: "Nenhuma loja selecionada." };
   }
 
-  // Criar datas do início e fim do dia em hora local
-  const now = new Date();
-  const startOfDay = new Date(now);
-  startOfDay.setHours(0, 0, 0, 0);
-
-  const endOfDay = new Date(now);
-  endOfDay.setHours(23, 59, 59, 999);
+  // Dia atual no fuso de São Paulo (evita diferença localhost vs produção em UTC)
+  const startOfDay = getStartOfDayBrazil();
+  const endOfDay = getEndOfDayBrazil();
 
   // Verifica se já existe fechamento para hoje
   const [existingClosure] = await db
@@ -561,6 +524,133 @@ export async function getDailySales(storeId?: string | null) {
     salesCount: Number(aggregates?.salesCount ?? 0),
     isClosed: !!existingClosure,
     closureId: existingClosure?.id || null,
+  };
+}
+
+/** Dados do relatório de fechamento para impressão */
+export type CashClosureReportSale = {
+  id: string;
+  totalCents: number;
+  paymentMethod: string;
+  createdAt: Date | null;
+  seller: { name: string } | null;
+  client: { name: string } | null;
+  items: Array<{
+    quantity: number;
+    unitPriceCents: number;
+    productName: string;
+  }>;
+};
+
+export async function getCashClosureReport(closureId: string) {
+  const session = await getUserSession();
+
+  if (!["owner", "manager"].includes(session.role)) {
+    return { error: "Apenas dono ou gerente podem visualizar o relatório." };
+  }
+
+  const [closure] = await db
+    .select()
+    .from(cashClosures)
+    .where(
+      and(
+        eq(cashClosures.id, closureId),
+        eq(cashClosures.organizationId, session.organizationId),
+      ),
+    )
+    .limit(1);
+
+  if (!closure) {
+    return { error: "Fechamento de caixa não encontrado." };
+  }
+
+  const [storeRow] = await db
+    .select({ name: stores.name })
+    .from(stores)
+    .where(eq(stores.id, closure.storeId))
+    .limit(1);
+
+  const [orgRow] = await db
+    .select({ name: organizations.name })
+    .from(organizations)
+    .where(eq(organizations.id, closure.organizationId))
+    .limit(1);
+
+  const closedByProfile = await db.query.profiles.findFirst({
+    where: eq(profiles.id, closure.closedBy),
+    columns: { name: true },
+  });
+
+  const salesData = await db
+    .select({
+      id: sales.id,
+      totalCents: sales.totalCents,
+      paymentMethod: sales.paymentMethod,
+      createdAt: sales.createdAt,
+      sellerId: sales.sellerId,
+      clientId: sales.clientId,
+    })
+    .from(sales)
+    .where(
+      and(
+        eq(sales.organizationId, closure.organizationId),
+        eq(sales.storeId, closure.storeId),
+        gte(sales.createdAt, closure.periodStart),
+        lte(sales.createdAt, closure.periodEnd),
+      ),
+    )
+    .orderBy(desc(sales.createdAt));
+
+  const reportSales: CashClosureReportSale[] = await Promise.all(
+    salesData.map(async (sale) => {
+      const seller = await db.query.profiles.findFirst({
+        where: eq(profiles.id, sale.sellerId),
+        columns: { name: true },
+      });
+      const client = sale.clientId
+        ? await db.query.clients.findFirst({
+            where: eq(clients.id, sale.clientId),
+            columns: { name: true },
+          })
+        : null;
+      const items = await db.query.saleItems.findMany({
+        where: eq(saleItems.saleId, sale.id),
+        with: {
+          product: { columns: { name: true } },
+        },
+      });
+      return {
+        id: sale.id,
+        totalCents: sale.totalCents,
+        paymentMethod: sale.paymentMethod,
+        createdAt: sale.createdAt,
+        seller: seller ? { name: seller.name } : null,
+        client: client ? { name: client.name } : null,
+        items: items.map((i) => ({
+          quantity: i.quantity,
+          unitPriceCents: i.unitPriceCents,
+          productName: i.product?.name ?? "Produto",
+        })),
+      };
+    }),
+  );
+
+  return {
+    success: true,
+    data: {
+      closure: {
+        id: closure.id,
+        totalCents: closure.totalCents,
+        salesCount: closure.salesCount,
+        periodStart: closure.periodStart,
+        periodEnd: closure.periodEnd,
+        createdAt: closure.createdAt,
+      },
+      storeName: storeRow?.name ?? "Loja",
+      orgName: orgRow?.name ?? "Organização",
+      closedByName: closedByProfile?.name ?? "—",
+      sales: reportSales,
+    },
   };
 }
 

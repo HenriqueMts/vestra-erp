@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { getUserSession } from "@/lib/get-user-session";
+import { isAdmin } from "@/lib/check-access";
 import { db } from "@/db";
 import { sales } from "@/db/schema";
 import { and, eq, gte, lte, sql } from "drizzle-orm";
@@ -33,10 +34,14 @@ export default async function SalesSummaryPage({
 }: Readonly<{
   searchParams: SearchParams;
 }>) {
+  const adminCheck = await isAdmin();
   const session = await getUserSession();
-  if (session.role === "seller") {
+  
+  // Admin ou owner/manager podem acessar, seller não
+  if (!adminCheck && session.role === "seller") {
     redirect("/dashboard");
   }
+  
   const params = await searchParams;
 
   const { from, to } = parseDateRange(params);

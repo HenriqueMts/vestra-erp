@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import {
   Card,
@@ -39,10 +40,29 @@ import {
   Calendar,
   DollarSign,
   ShoppingBag,
+  Store,
+  Printer,
+  X,
+  Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
-import { closeDailyCash, reopenCash } from "@/actions/sales";
+import { closeDailyCash, reopenCash, getCashClosureReport } from "@/actions/sales";
 import Link from "next/link";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import {
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+} from "@/components/ui/combobox";
 
 interface Sale {
   id: string;
@@ -69,6 +89,30 @@ interface Sale {
   }>;
 }
 
+/** Dados do relatório de fechamento (para o modal de impressão) */
+type ClosureReportData = {
+  closure: {
+    id: string;
+    totalCents: number;
+    salesCount: number;
+    periodStart: Date | string;
+    periodEnd: Date | string;
+    createdAt: Date | string | null;
+  };
+  storeName: string;
+  orgName: string;
+  closedByName: string;
+  sales: Array<{
+    id: string;
+    totalCents: number;
+    paymentMethod: string;
+    createdAt: Date | string | null;
+    seller: { name: string } | null;
+    client: { name: string } | null;
+    items: Array<{ quantity: number; unitPriceCents: number; productName: string }>;
+  }>;
+};
+
 interface CashClosureClientProps {
   initialData: {
     success: boolean;
@@ -79,6 +123,7 @@ interface CashClosureClientProps {
     closureId: string | null;
   };
   storeId?: string | null;
+  stores: Array<{ id: string; name: string }>;
 }
 
 const paymentMethodLabels: Record<string, string> = {
@@ -98,12 +143,32 @@ const paymentMethodColors: Record<string, string> = {
 export function CashClosureClient({
   initialData,
   storeId,
+  stores,
 }: Readonly<CashClosureClientProps>) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [showCloseDialog, setShowCloseDialog] = useState(false);
   const [showReopenDialog, setShowReopenDialog] = useState(false);
   const [isClosed, setIsClosed] = useState(initialData.isClosed);
+  const [selectedStoreId, setSelectedStoreId] = useState(storeId || stores[0]?.id || "");
+  const [reportData, setReportData] = useState<ClosureReportData | null>(null);
+  const [loadingReport, setLoadingReport] = useState(false);
+
+  // Sincronizar estado quando loja mudar via query param
+  useEffect(() => {
+    if (storeId && storeId !== selectedStoreId) {
+      setSelectedStoreId(storeId);
+      setIsClosed(initialData.isClosed);
+    }
+  }, [storeId, initialData.isClosed, selectedStoreId]);
+
+  const selectedStore = stores.find((s) => s.id === selectedStoreId) ?? null;
+
+  const handleStoreChange = (newStore: { id: string; name: string } | null) => {
+    if (!newStore) return;
+    setSelectedStoreId(newStore.id);
+    router.push(`/dashboard/cash-closure?store=${newStore.id}`);
+  };
 
   const formatCurrency = (cents: number) =>
     new Intl.NumberFormat("pt-BR", {
@@ -124,22 +189,152 @@ export function CashClosureClient({
 
   const handleCloseCash = () => {
     startTransition(async () => {
-      const result = await closeDailyCash(storeId);
+      const result = await closeDailyCash(selectedStoreId);
 
       if ("error" in result && result.error) {
         toast.error(result.error);
         return;
       }
 
-      if ("success" in result && result.success) {
+      if ("success" in result && result.success && "closureId" in result) {
         toast.success(
           `Caixa fechado com sucesso! Vendas: ${result.salesCount}, Total: ${formatCurrency(result.totalCents)}`,
         );
         setIsClosed(true);
+        setShowCloseDialog(false);
         router.refresh();
+
+        setLoadingReport(true);
+        const reportResult = await getCashClosureReport(result.closureId);
+        setLoadingReport(false);
+        if ("data" in reportResult && reportResult.data) {
+          setReportData(reportResult.data);
+        }
       }
     });
     setShowCloseDialog(false);
+  };
+
+  const formatDateTime = (date: Date | string | null) =>
+    date
+      ? new Intl.DateTimeFormat("pt-BR", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        }).format(new Date(date))
+      : "—";
+
+  const formatDateOnly = (date: Date | string | null) =>
+    date
+      ? new Intl.DateTimeFormat("pt-BR", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+        }).format(new Date(date))
+      : "—";
+
+  const handlePrintReport = () => {
+    if (typeof window === "undefined") return;
+    window.print();
+  };
+
+  /** Conteúdo do relatório para visualização no modal (layout completo) */
+  const renderReportContent = (report: ClosureReportData) => (
+    <div className="space-y-4 text-sm text-black">
+      <header className="border-b border-gray-400 pb-3">
+        <h2 className="text-lg font-bold">Relatório de Fechamento de Caixa</h2>
+        <p className="mt-1">{report.orgName} · {report.storeName}</p>
+        <div className="mt-2 grid grid-cols-2 gap-x-6 gap-y-1">
+          <p><strong>Período:</strong> {formatDateOnly(report.closure.periodStart)}</p>
+          <p><strong>Fechado por:</strong> {report.closedByName}</p>
+          <p><strong>Data do fechamento:</strong> {formatDateTime(report.closure.createdAt)}</p>
+        </div>
+      </header>
+      <section>
+        <h3 className="font-semibold">Resumo</h3>
+        <ul className="mt-1 list-disc list-inside">
+          <li>Total de vendas: {report.closure.salesCount}</li>
+          <li>Total arrecadado: {formatCurrency(report.closure.totalCents)}</li>
+        </ul>
+      </section>
+      <section>
+        <h3 className="font-semibold">Vendas do dia</h3>
+        <table className="mt-2 w-full border-collapse border border-gray-400 text-xs">
+          <thead>
+            <tr className="bg-gray-200">
+              <th className="border border-gray-400 px-2 py-1.5 text-left font-semibold">ID</th>
+              <th className="border border-gray-400 px-2 py-1.5 text-left font-semibold">Data/Hora</th>
+              <th className="border border-gray-400 px-2 py-1.5 text-left font-semibold">Vendedor</th>
+              <th className="border border-gray-400 px-2 py-1.5 text-left font-semibold">Cliente</th>
+              <th className="border border-gray-400 px-2 py-1.5 text-left font-semibold">Pagamento</th>
+              <th className="border border-gray-400 px-2 py-1.5 text-left font-semibold">Itens</th>
+              <th className="border border-gray-400 px-2 py-1.5 text-right font-semibold">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            {report.sales.map((sale) => (
+              <tr key={sale.id}>
+                <td className="border border-gray-400 px-2 py-1 font-mono">{sale.id.slice(0, 8)}...</td>
+                <td className="border border-gray-400 px-2 py-1">{formatDateTime(sale.createdAt)}</td>
+                <td className="border border-gray-400 px-2 py-1">{sale.seller?.name ?? "—"}</td>
+                <td className="border border-gray-400 px-2 py-1">{sale.client?.name ?? "—"}</td>
+                <td className="border border-gray-400 px-2 py-1">{paymentMethodLabels[sale.paymentMethod] ?? sale.paymentMethod}</td>
+                <td className="border border-gray-400 px-2 py-1">{sale.items.map((i) => `${i.quantity}x ${i.productName}`).join(", ")}</td>
+                <td className="border border-gray-400 px-2 py-1 text-right font-medium">{formatCurrency(sale.totalCents)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </section>
+      <footer className="border-t border-gray-400 pt-3 text-xs">
+        Documento gerado em {formatDateTime(new Date())} · Vestra ERP
+      </footer>
+    </div>
+  );
+
+  /** Versão 80mm para impressão (mesma largura do cupom) */
+  const renderReportContent80mm = (report: ClosureReportData) => (
+    <div className="w-[80mm] max-w-[80mm] bg-white p-2 text-[9px] font-mono leading-tight text-black">
+      <div className="text-center border-b border-black pb-1.5 border-dashed">
+        <h2 className="font-bold text-[10px] uppercase">Fechamento de Caixa</h2>
+        <p className="text-[8px] mt-0.5">{report.orgName}</p>
+        <p className="text-[8px]">{report.storeName}</p>
+        <p className="text-[8px]">{formatDateOnly(report.closure.periodStart)}</p>
+        <p className="text-[8px]">Fechado por: {report.closedByName}</p>
+        <p className="text-[8px]">{formatDateTime(report.closure.createdAt)}</p>
+      </div>
+      <div className="border-b border-black pb-1.5 border-dashed mt-1.5">
+        <p className="font-bold">Resumo</p>
+        <p>Vendas: {report.closure.salesCount}</p>
+        <p>Total: {formatCurrency(report.closure.totalCents)}</p>
+      </div>
+      <div className="border-b border-black pb-1.5 border-dashed mt-1.5">
+        <p className="font-bold mb-1">Vendas do dia</p>
+        <div className="flex font-bold mb-0.5 text-[8px]">
+          <span className="w-10">R$</span>
+          <span className="flex-1">Hora</span>
+        </div>
+        {report.sales.map((sale) => (
+          <div key={sale.id} className="flex mb-0.5 text-[8px]">
+            <span className="w-10">{formatCurrency(sale.totalCents)}</span>
+            <span className="flex-1">{formatDateTime(sale.createdAt)}</span>
+          </div>
+        ))}
+      </div>
+      <div className="flex justify-between font-bold mt-1.5 text-[10px]">
+        <span>TOTAL</span>
+        <span>{formatCurrency(report.closure.totalCents)}</span>
+      </div>
+      <div className="text-center mt-2 text-[8px] border-t border-black border-dashed pt-1.5">
+        <p>Vestra ERP</p>
+      </div>
+    </div>
+  );
+
+  const handleCloseReport = () => {
+    setReportData(null);
   };
 
   const handleReopenCash = () => {
@@ -174,6 +369,38 @@ export function CashClosureClient({
           </p>
         </div>
         <div className="flex items-center gap-3">
+          {stores.length > 1 && (
+            <div className="flex items-center gap-2">
+              <Label htmlFor="store-combobox" className="text-sm font-medium whitespace-nowrap">
+                <Store className="inline size-4 mr-1.5 -mt-0.5" />
+                Loja:
+              </Label>
+              <Combobox
+                items={stores}
+                value={selectedStore}
+                onValueChange={(value) => handleStoreChange(value ?? null)}
+                itemToStringLabel={(store) => store.name}
+                itemToStringValue={(store) => store.id}
+                isItemEqualToValue={(item, val) => (val && typeof val === "object" && "id" in val ? item.id === val.id : item.id === val)}
+              >
+                <ComboboxInput
+                  id="store-combobox"
+                  placeholder="Selecione a loja"
+                  className="w-[220px]"
+                />
+                <ComboboxContent>
+                  <ComboboxEmpty>Nenhuma loja encontrada.</ComboboxEmpty>
+                  <ComboboxList>
+                    {(store) => (
+                      <ComboboxItem key={store.id} value={store}>
+                        {store.name}
+                      </ComboboxItem>
+                    )}
+                  </ComboboxList>
+                </ComboboxContent>
+              </Combobox>
+            </div>
+          )}
           <Link href="/dashboard">
             <Button variant="outline" className="gap-2">
               <ArrowLeft size={16} />
@@ -395,6 +622,70 @@ export function CashClosureClient({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Dialog do Relatório de Fechamento (igual ao cupom: exibe na tela) */}
+      <Dialog
+        open={loadingReport || reportData !== null}
+        onOpenChange={(open) => !open && !loadingReport && handleCloseReport()}
+      >
+        <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+          <DialogHeader className="p-4 pb-0">
+            <DialogTitle>
+              {loadingReport ? "Gerando relatório..." : "Relatório de Fechamento de Caixa"}
+            </DialogTitle>
+          </DialogHeader>
+          {loadingReport ? (
+            <div className="p-8 flex flex-col items-center justify-center gap-3">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <p className="text-sm text-muted-foreground">Gerando relatório...</p>
+            </div>
+          ) : reportData ? (
+            <>
+              <div className="receipt-print-area px-4 pb-4 overflow-auto">
+                {renderReportContent(reportData)}
+              </div>
+              <div className="p-4 border-t bg-muted/50 flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="flex-1 gap-2"
+                  onClick={handlePrintReport}
+                >
+                  <Printer className="h-4 w-4" />
+                  Imprimir
+                </Button>
+                <Button
+                  type="button"
+                  className="flex-1 gap-2"
+                  onClick={handleCloseReport}
+                >
+                  <X className="h-4 w-4" />
+                  Fechar
+                </Button>
+              </div>
+            </>
+          ) : null}
+        </DialogContent>
+      </Dialog>
+
+      {/* Cópia do relatório em 80mm só para impressão (mesma largura do cupom) */}
+      {reportData &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div
+            data-print="closure-report"
+            className="fixed left-0 top-0 z-[99999] bg-white text-black"
+            style={{
+              visibility: "hidden",
+              pointerEvents: "none",
+              height: "auto",
+            }}
+            aria-hidden
+          >
+            {renderReportContent80mm(reportData)}
+          </div>,
+          document.body
+        )}
     </div>
   );
 }

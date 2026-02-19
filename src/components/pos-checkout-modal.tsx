@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -212,7 +213,6 @@ export function PosCheckoutModal({
               <div
                 ref={receiptRef}
                 className="receipt-print-area px-4 pb-4 overflow-auto"
-                data-print="true"
               >
                 <Receipt
                   organization={receiptData.organization}
@@ -476,6 +476,35 @@ export function PosCheckoutModal({
           )}
         </DialogContent>
       </Dialog>
+
+      {receiptData &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div
+            data-print="true"
+            className="receipt-print-area"
+            style={{
+              position: "fixed",
+              left: "-9999px",
+              top: 0,
+              width: "80mm",
+              visibility: "hidden",
+              pointerEvents: "none",
+            }}
+            aria-hidden="true"
+          >
+            <Receipt
+              organization={receiptData.organization}
+              store={receiptData.store}
+              items={receiptData.items}
+              total={receiptData.total}
+              date={receiptData.date}
+              orderId={receiptData.orderId}
+              invoiceUrl={receiptData.invoiceUrl}
+            />
+          </div>,
+          document.body
+        )}
 
       <PosClientRegisterModal
         open={showClientModal}
