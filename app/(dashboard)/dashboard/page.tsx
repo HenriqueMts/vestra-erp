@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getUserSession } from "@/lib/get-user-session";
+import { isAdmin } from "@/lib/check-access";
 import { db } from "@/db";
 import { clients, sales } from "@/db/schema";
 import { eq, desc, and, sql, gte } from "drizzle-orm";
@@ -14,6 +15,7 @@ import { CloseCashButton } from "./components/close-cash-button";
 import { getStockOverview } from "@/actions/products";
 
 export default async function DashboardPage() {
+  const adminCheck = await isAdmin();
   const { organizationId, orgName, role, storeId } = await getUserSession();
 
   const [totalClientsResult] = await db
@@ -52,7 +54,7 @@ export default async function DashboardPage() {
   const chartData = generateLast6MonthsData(allClientsDates);
 
   const canSeeSales =
-    role === "owner" || role === "manager";
+    adminCheck || role === "owner" || role === "manager";
 
   const [totalSalesResult] = canSeeSales
     ? await db
@@ -97,7 +99,7 @@ export default async function DashboardPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          {["owner", "manager"].includes(role) && (
+          {(adminCheck || ["owner", "manager"].includes(role)) && (
             <CloseCashButton storeId={storeId} />
           )}
           <Link href="/pos">

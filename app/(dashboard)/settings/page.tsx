@@ -1,4 +1,5 @@
 import { getUserSession } from "@/lib/get-user-session";
+import { isAdmin } from "@/lib/check-access";
 import {
   Card,
   CardContent,
@@ -18,13 +19,15 @@ import { Palette, ArrowRight, Tag, FileText } from "lucide-react";
 import { getOrganization } from "@/actions/organization";
 
 export default async function SettingsPage() {
+  const adminCheck = await isAdmin();
   const session = await getUserSession();
 
   if (!session) redirect("/login");
-  if (session.role === "seller") redirect("/dashboard");
+  // Admin ou owner/manager podem acessar, seller não
+  if (!adminCheck && session.role === "seller") redirect("/dashboard");
 
-  const isOwner = session.role === "owner";
-  const canManageAttributes = ["owner", "manager"].includes(session.role);
+  const isOwner = adminCheck || session.role === "owner";
+  const canManageAttributes = adminCheck || ["owner", "manager"].includes(session.role);
 
   // Buscar lojas e dados da organização
   const [organizationStores, orgResult] = await Promise.all([

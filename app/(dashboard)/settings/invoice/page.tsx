@@ -4,13 +4,15 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { InvoiceSettingsWizard } from "@/components/invoice-settings-wizard";
+import { isAdmin } from "@/lib/check-access";
 
 export default async function InvoiceSettingsPage() {
+  const adminCheck = await isAdmin();
   const session = await getUserSession();
   if (!session) redirect("/login");
-  if (session.role === "seller") redirect("/dashboard");
+  if (!adminCheck && session.role === "seller") redirect("/dashboard");
 
-  const canManage = session.role === "owner" || session.role === "manager";
+  const canManage = adminCheck || session.role === "owner" || session.role === "manager";
 
   return (
     <div className="w-full min-h-screen space-y-6 p-4 sm:p-6 lg:p-8 max-w-3xl mx-auto">

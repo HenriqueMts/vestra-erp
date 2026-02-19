@@ -15,6 +15,7 @@ import {
   Package,
   LineChart,
   CreditCard,
+  Shield,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -34,6 +35,7 @@ interface AppSidebarProps {
     email: string;
     initials: string;
     role?: Role;
+    isAdmin?: boolean;
   }>;
   logo: React.ReactNode;
 }
@@ -41,7 +43,7 @@ interface AppSidebarProps {
 export function AppSidebar({ user, logo }: Readonly<AppSidebarProps>) {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
-  const canSeeSales = user.role === "owner" || user.role === "manager";
+  const canSeeSales = user.isAdmin || user.role === "owner" || user.role === "manager";
 
   const isActive = (path: string) =>
     pathname === path || pathname.startsWith(`${path}/`);
@@ -218,6 +220,34 @@ export function AppSidebar({ user, logo }: Readonly<AppSidebarProps>) {
                     }
                   />
                   <span>Plano de assinatura</span>
+                </Link>
+              </>
+            )}
+
+            {user.isAdmin && (
+              <>
+                <div className="border-t border-sidebar-border my-2" />
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest px-3 mb-3">
+                  Administração
+                </p>
+                <Link
+                  href="/dashboard/admin"
+                  onClick={closeMenu}
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium text-sm transition-all ${
+                    isActive("/dashboard/admin")
+                      ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-md"
+                      : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                  }`}
+                >
+                  <Shield
+                    size={18}
+                    className={
+                      isActive("/dashboard/admin")
+                        ? "text-sidebar-primary-foreground"
+                        : "text-muted-foreground"
+                    }
+                  />
+                  <span>Área Admin</span>
                 </Link>
               </>
             )}

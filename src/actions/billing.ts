@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { organizations, members } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { getUserSession } from "@/lib/get-user-session";
+import { createClient } from "@/utils/supabase/server";
 import { asaasFetch, isAsaasConfigured } from "@/lib/asaas";
 import { isPlatformAdmin } from "@/lib/platform-admin";
 import { revalidatePath } from "next/cache";
@@ -57,9 +58,13 @@ export async function listOrganizationsForAdmin() {
 
 /** Cadastra a organização como cliente no Asaas (sua conta). Apenas admin. */
 export async function createAsaasCustomer(organizationId: string) {
-  const session = await getUserSession();
-  if (!session?.user?.email) return { error: "Não autorizado" };
-  if (!isPlatformAdmin(session.user.email)) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  
+  if (!user?.email) return { error: "Não autorizado" };
+  if (!isPlatformAdmin(user.email)) {
     return { error: "Apenas o administrador da plataforma pode cadastrar clientes no Asaas." };
   }
   if (!isAsaasConfigured()) {
@@ -85,7 +90,7 @@ export async function createAsaasCustomer(organizationId: string) {
     where: eq(members.organizationId, organizationId),
     columns: { email: true },
   });
-  const email = owner?.email ?? session.user.email;
+  const email = owner?.email ?? user.email;
 
   const payload = {
     name: org.name,
@@ -124,6 +129,7 @@ export async function createAsaasCustomer(organizationId: string) {
 
     revalidatePath("/minha-conta");
     revalidatePath("/dashboard");
+    revalidatePath("/dashboard/admin");
     return { success: true, asaasCustomerId: String(customerId) };
   } catch (err) {
     console.error("createAsaasCustomer:", err);
@@ -142,15 +148,19 @@ function getNextDueDate(billingDay: number): string {
   return next.toISOString().slice(0, 10);
 }
 
-/** Cria ou atualiza a assinatura (plano) no Asaas para a organização. Valor em reais, dia 1–28. Apenas admin. */
+/** Cria ou atualiza a assinatura (plano) no Asaas para a organização. Valor em reais; dia 1–28 ou data de vencimento (YYYY-MM-DD). Apenas admin. */
 export async function createOrUpdateSubscription(
   organizationId: string,
   valueReais: number,
-  billingDay: number
+  billingDayOrNextDueDate: number | string
 ) {
-  const session = await getUserSession();
-  if (!session?.user?.email) return { error: "Não autorizado" };
-  if (!isPlatformAdmin(session.user.email)) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  
+  if (!user?.email) return { error: "Não autorizado" };
+  if (!isPlatformAdmin(user.email)) {
     return { error: "Apenas o administrador da plataforma pode definir planos." };
   }
   if (!isAsaasConfigured()) {
@@ -168,12 +178,19 @@ export async function createOrUpdateSubscription(
   }
 
   const value = Math.max(0, Number(valueReais));
-  const day = Math.max(1, Math.min(28, Math.floor(billingDay)));
   const valueCents = Math.round(value * 100);
 
   if (value <= 0) return { error: "Informe um valor maior que zero." };
 
-  const nextDueDate = getNextDueDate(day);
+  const isDateString =
+    typeof billingDayOrNextDueDate === "string" &&
+    /^\d{4}-\d{2}-\d{2}$/.test(billingDayOrNextDueDate);
+  const nextDueDate = isDateString
+    ? billingDayOrNextDueDate
+    : getNextDueDate(Math.max(1, Math.min(28, Math.floor(billingDayOrNextDueDate as number))));
+  const day = isDateString
+    ? Math.max(1, Math.min(28, parseInt(String(billingDayOrNextDueDate).slice(8, 10), 10) || 1))
+    : Math.max(1, Math.min(28, Math.floor(billingDayOrNextDueDate as number)));
 
   try {
     if (org.asaasSubscriptionId) {
@@ -238,6 +255,7 @@ export async function createOrUpdateSubscription(
 
     revalidatePath("/minha-conta");
     revalidatePath("/dashboard");
+    revalidatePath("/dashboard/admin");
     return { success: true };
   } catch (err) {
     console.error("createOrUpdateSubscription:", err);

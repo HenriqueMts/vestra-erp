@@ -127,7 +127,14 @@
   }
 }
 
+/* Padrão: A4 (relatórios, fechamento de caixa) */
 @page {
+  size: A4;
+  margin: 15mm;
+}
+
+/* Cupom térmico 80mm - aplicado só ao elemento com page: receipt */
+@page receipt {
   size: 80mm auto;
   margin: 5mm;
 }
@@ -146,6 +153,9 @@
     top: 0 !important;
     width: 80mm !important;
     max-width: 80mm !important;
+    height: auto !important;
+    max-height: none !important;
+    page: receipt;
     min-height: auto !important;
     overflow: visible !important;
     padding: 0 !important;
@@ -173,5 +183,49 @@
     top: 0;
     width: 100%;
     background: white;
+  }
+
+  /* Relatório de fechamento de caixa (80mm - mesma largura do cupom) */
+  [data-print="closure-report"],
+  [data-print="closure-report"] * {
+    visibility: visible;
+  }
+  [data-print="closure-report"] {
+    position: fixed !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 80mm !important;
+    max-width: 80mm !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    padding: 2mm !important;
+    margin: 0 !important;
+    background: white !important;
+    box-shadow: none !important;
+    color: #000 !important;
+    display: block !important;
+    contain: none !important;
+    page: receipt;
+  }
+  [data-print="closure-report"] .receipt-print-area,
+  [data-print="closure-report"].receipt-print-area {
+    overflow: visible !important;
+    max-height: none !important;
+    height: auto !important;
+    min-height: 0 !important;
+    display: block !important;
+  }
+  [data-print="closure-report"] table {
+    display: table !important;
+  }
+  [data-print="closure-report"] thead,
+  [data-print="closure-report"] tbody,
+  [data-print="closure-report"] tr {
+    display: table-row !important;
+  }
+  [data-print="closure-report"] th,
+  [data-print="closure-report"] td {
+    display: table-cell !important;
   }
 }

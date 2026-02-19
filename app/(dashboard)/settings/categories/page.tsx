@@ -1,13 +1,15 @@
 import { getCategories } from "@/actions/categories";
 import { CategoriesClient } from "@/components/categories-client";
 import { getUserSession } from "@/lib/get-user-session";
+import { isAdmin } from "@/lib/check-access";
 import { redirect } from "next/navigation";
 
 export default async function CategoriesPage() {
+  const adminCheck = await isAdmin();
   const session = await getUserSession();
   if (!session) redirect("/login");
 
-  const canManage = ["owner", "manager"].includes(session.role);
+  const canManage = adminCheck || ["owner", "manager"].includes(session.role);
   if (!canManage) redirect("/dashboard");
 
   const { categories } = await getCategories();
