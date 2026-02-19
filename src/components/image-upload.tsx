@@ -27,29 +27,38 @@ export function ImageUpload({
     setIsUploading(true);
 
     try {
-      // Upload em paralelo
-      const uploadPromises = files.map(async (file) => {
-        if (file.size > 5 * 1024 * 1024)
-          throw new Error(`Arquivo ${file.name} muito grande (max 5MB)`);
+      const tooLarge = files.filter((f) => f.size > 20 * 1024 * 1024);
+      if (tooLarge.length > 0) {
+        toast.error("Arquivo muito grande", {
+          description: `${tooLarge.map((f) => f.name).join(", ")} excede o limite de 20MB.`,
+        });
+        setIsUploading(false);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+        return;
+      }
 
+      const uploadPromises = files.map(async (file) => {
         const formData = new FormData();
         formData.append("file", file);
         const result = await uploadProductImage(formData);
-
-        if (result.error) throw new Error(result.error);
+        if (result.error) return null;
         return result.url;
       });
 
       const uploadedUrls = await Promise.all(uploadPromises);
       const validUrls = uploadedUrls.filter((u): u is string => !!u);
 
-      // Adiciona as novas imagens ao final da lista existente
-      onChange([...value, ...validUrls]);
-      toast.success(`${validUrls.length} imagem(ns) adicionada(s)!`);
+      if (validUrls.length > 0) {
+        onChange([...value, ...validUrls]);
+        toast.success(`${validUrls.length} imagem(ns) adicionada(s)!`);
+      }
+      if (validUrls.length < files.length) {
+        toast.error("Algumas imagens falharam no envio.");
+      }
     } catch (error) {
       console.error(error);
       toast.error("Erro no upload", {
-        description: "Falha ao enviar algumas imagens.",
+        description: "Falha ao enviar imagens.",
       });
     } finally {
       setIsUploading(false);
@@ -74,7 +83,7 @@ export function ImageUpload({
         {value.map((url, index) => (
           <div
             key={url}
-            className="relative aspect-square rounded-lg overflow-hidden border border-slate-200 group bg-slate-100"
+            className="relative aspect-square rounded-lg overflow-hidden border border-border group bg-muted"
           >
             <Image
               src={url}
@@ -88,7 +97,7 @@ export function ImageUpload({
               <button
                 type="button"
                 onClick={() => handleSetCover(url)}
-                className={`p-1.5 rounded-full ${index === 0 ? "bg-yellow-400 text-white cursor-default" : "bg-white text-slate-600 hover:bg-yellow-100"}`}
+                className={`p-1.5 rounded-full ${index === 0 ? "bg-yellow-400 text-white cursor-default" : "bg-card text-muted-foreground hover:bg-muted"}`}
                 title={index === 0 ? "Foto de Capa" : "Definir como Capa"}
               >
                 <Star size={16} fill={index === 0 ? "currentColor" : "none"} />
@@ -97,7 +106,7 @@ export function ImageUpload({
               <button
                 type="button"
                 onClick={() => handleRemove(url)}
-                className="p-1.5 rounded-full bg-white text-red-600 hover:bg-red-50"
+                className="p-1.5 rounded-full bg-card text-destructive hover:bg-destructive/10"
                 title="Remover"
               >
                 <X size={16} />
@@ -116,17 +125,17 @@ export function ImageUpload({
         <div
           onClick={() => !disabled && fileInputRef.current?.click()}
           className={`
-                    aspect-square rounded-lg border-2 border-dashed flex flex-col items-center justify-center gap-2
-                    transition-colors cursor-pointer bg-slate-50 hover:bg-slate-100
+                    aspect-square rounded-lg border-2 border-dashed border-border flex flex-col items-center justify-center gap-2
+                    transition-colors cursor-pointer bg-muted/50 hover:bg-muted
                     ${isUploading ? "opacity-50 pointer-events-none" : ""}
                 `}
         >
           {isUploading ? (
-            <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+            <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
           ) : (
             <>
-              <ImagePlus className="w-6 h-6 text-slate-400" />
-              <span className="text-xs font-medium text-slate-500">
+              <ImagePlus className="w-6 h-6 text-muted-foreground" />
+              <span className="text-xs font-medium text-muted-foreground">
                 Adicionar
               </span>
             </>
@@ -137,7 +146,7 @@ export function ImageUpload({
       <input
         type="file"
         multiple
-        accept="image/*"
+        accept="image/*,.img"
         className="hidden"
         ref={fileInputRef}
         onChange={handleFileSelect}
