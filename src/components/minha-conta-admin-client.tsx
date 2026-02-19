@@ -104,41 +104,41 @@ export function MinhaContaAdminClient({ organizations }: { organizations: OrgRow
           {error}
         </div>
       )}
-      <div className="border border-border rounded-xl overflow-hidden bg-card">
-        <table className="w-full text-sm">
+      <div className="border border-border rounded-xl overflow-x-auto bg-card">
+        <table className="w-full min-w-[640px] sm:min-w-0 text-sm">
           <thead>
             <tr className="bg-muted border-b border-border">
-              <th className="text-left font-semibold text-foreground p-3">Empresa</th>
+              <th className="text-left font-semibold text-foreground p-3 min-w-[140px]">Empresa</th>
               <th className="text-left font-semibold text-foreground p-3 hidden sm:table-cell">Documento</th>
               <th className="text-left font-semibold text-foreground p-3 hidden md:table-cell">Contato</th>
-              <th className="text-left font-semibold text-foreground p-3">Asaas</th>
-              <th className="text-left font-semibold text-foreground p-3">Cobrança</th>
-              <th className="text-right font-semibold text-foreground p-3">Ação</th>
+              <th className="text-left font-semibold text-foreground p-3 min-w-[120px]">Asaas</th>
+              <th className="text-left font-semibold text-foreground p-3 min-w-[140px] whitespace-nowrap">Cobrança</th>
+              <th className="text-right font-semibold text-foreground p-3 min-w-[140px]">Ação</th>
             </tr>
           </thead>
           <tbody>
             {organizations.map((org) => (
               <tr key={org.id} className="border-b border-border hover:bg-muted/50">
-                <td className="p-3">
+                <td className="p-3 min-w-[140px]">
                   <span className="font-medium text-foreground">{org.name}</span>
                   <span className="text-muted-foreground ml-1">({org.slug})</span>
                 </td>
                 <td className="p-3 text-muted-foreground hidden sm:table-cell">{org.document || "—"}</td>
                 <td className="p-3 text-muted-foreground hidden md:table-cell">{org.ownerEmail || "—"}</td>
-                <td className="p-3">
+                <td className="p-3 min-w-[120px]">
                   {org.asaasCustomerId ? (
                     <div className="flex flex-col gap-1">
-                      <span className="text-emerald-600 font-medium">Cadastrado</span>
-                      <span className="text-xs text-muted-foreground font-mono">{org.asaasCustomerId}</span>
+                      <span className="text-primary font-medium">Cadastrado</span>
+                      <span className="text-xs text-muted-foreground font-mono break-all">{org.asaasCustomerId}</span>
                     </div>
                   ) : (
                     <span className="text-muted-foreground">Não cadastrado</span>
                   )}
                 </td>
-                <td className="p-3 text-muted-foreground">
+                <td className="p-3 text-muted-foreground min-w-[140px] whitespace-nowrap">
                   {org.asaasCustomerId ? formatPlan(org) : "—"}
                 </td>
-                <td className="p-3 text-right">
+                <td className="p-3 text-right min-w-[140px]">
                   {!org.asaasCustomerId ? (
                     <Button
                       size="sm"

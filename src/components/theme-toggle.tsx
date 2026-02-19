@@ -32,8 +32,8 @@ export function ThemeToggle({ className }: Readonly<{ className?: string }>) {
       aria-label={isDark ? "Ativar modo claro" : "Ativar modo escuro"}
       onClick={() => setTheme(isDark ? "light" : "dark")}
       className={cn(
-        "relative flex h-9 w-21 shrink-0 items-center overflow-hidden rounded-full border border-border transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-        isDark ? "bg-secondary" : "bg-muted",
+        "relative flex h-9 w-21 shrink-0 items-center overflow-hidden rounded-full border-2 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+        isDark ? "bg-secondary border-border" : "bg-muted border-border",
         className
       )}
     >
@@ -44,11 +44,11 @@ export function ThemeToggle({ className }: Readonly<{ className?: string }>) {
       <span className="absolute right-0 flex h-full w-1/2 items-center justify-center text-muted-foreground">
         <Moon size={18} strokeWidth={2} aria-hidden />
       </span>
-      {/* Thumb deslizante: claro no modo escuro (lua), escuro no modo claro (sol) */}
+      {/* Thumb deslizante: sempre branco, centralizado verticalmente */}
       <span
         className={cn(
-          "absolute top-1 h-7 w-7 rounded-full shadow-md transition-all duration-200",
-          isDark ? "left-1 bg-primary-foreground" : "left-[calc(100%-1.75rem-0.25rem)] bg-primary"
+          "absolute top-1/2 h-7 w-7 -translate-y-1/2 rounded-full border border-border bg-white shadow-md transition-all duration-200",
+          isDark ? "left-1" : "left-[calc(100%-1.75rem-0.25rem)]"
         )}
       />
     </button>

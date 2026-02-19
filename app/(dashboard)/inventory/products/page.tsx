@@ -232,7 +232,7 @@ export default async function ProductsPage({
                             <span
                               className={`text-xs sm:text-sm font-medium ${
                                 totalStock === 0
-                                  ? "text-red-500"
+                                  ? "text-destructive"
                                   : "text-foreground"
                               }`}
                             >
@@ -244,10 +244,8 @@ export default async function ProductsPage({
                             <span
                               className={`inline-flex items-center px-2 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-medium ${
                                 product.status === "active"
-                                  ? "bg-green-50 text-green-700"
-                                  : product.status === "inactive"
-                                    ? "bg-muted text-muted-foreground"
-                                    : "bg-muted text-muted-foreground"
+                                  ? "bg-primary/10 text-primary"
+                                  : "bg-muted text-muted-foreground"
                               }`}
                             >
                               {product.status === "active"
@@ -270,7 +268,7 @@ export default async function ProductsPage({
 
                           <TableCell className="text-xs sm:text-sm align-middle hidden xl:table-cell">
                             {product.costPrice != null ? (
-                              <span className="text-green-700 font-medium">
+                              <span className="text-primary font-medium">
                                 {formatCurrency(
                                   product.basePrice - product.costPrice
                                 )}{" "}

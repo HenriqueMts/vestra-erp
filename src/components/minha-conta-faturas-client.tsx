@@ -11,8 +11,16 @@ function formatCurrency(valueReais: number) {
   }).format(valueReais);
 }
 
+const ISO_DATE_REGEX = /^(\d{4})-(\d{2})-(\d{2})/;
+
+/** Formata data YYYY-MM-DD em DD/MM/YYYY sem alterar por fuso (evita dia 9 em vez de 10). */
 function formatDate(iso: string) {
   try {
+    const match = ISO_DATE_REGEX.exec(String(iso).trim());
+    if (match) {
+      const [, y, m, d] = match;
+      return `${d}/${m}/${y}`;
+    }
     return new Date(iso).toLocaleDateString("pt-BR", {
       day: "2-digit",
       month: "2-digit",
