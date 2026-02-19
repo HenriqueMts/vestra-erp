@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "app/api/upload/**/*.ts": {
+      "maxDuration": 30
+    }
+  }
+}

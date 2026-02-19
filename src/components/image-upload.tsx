@@ -4,7 +4,7 @@ import { useState, useRef } from "react";
 import { Loader2, ImagePlus, X, Star } from "lucide-react";
 import Image from "next/image";
 import { toast } from "sonner";
-import { uploadProductImage } from "@/actions/upload";
+import { createClient } from "@/utils/supabase/client";
 
 interface ImageUploadProps {
   value: string[]; // Recebe array de URLs
@@ -37,12 +37,35 @@ export function ImageUpload({
         return;
       }
 
-      const uploadPromises = files.map(async (file) => {
-        const formData = new FormData();
-        formData.append("file", file);
-        const result = await uploadProductImage(formData);
-        if (result.error) return null;
-        return result.url;
+      // Obter organizationId uma vez
+      const orgRes = await fetch("/api/upload/get-org-id");
+      const orgData = await orgRes.json();
+      if (!orgRes.ok || !orgData.organizationId) {
+        toast.error("Erro", { description: "Não foi possível obter informações da organização." });
+        setIsUploading(false);
+        return;
+      }
+
+      const supabase = createClient();
+
+      const uploadPromises = files.map(async (file, index) => {
+        const fileExt = file.name.split(".").pop() || "jpg";
+        const fileName = `${orgData.organizationId}/${Date.now()}-${index}.${fileExt}`;
+        
+        const { error } = await supabase.storage
+          .from("products")
+          .upload(fileName, file, { upsert: true });
+
+        if (error) {
+          console.error("Erro upload:", error);
+          return null;
+        }
+
+        const {
+          data: { publicUrl },
+        } = supabase.storage.from("products").getPublicUrl(fileName);
+
+        return publicUrl;
       });
 
       const uploadedUrls = await Promise.all(uploadPromises);
