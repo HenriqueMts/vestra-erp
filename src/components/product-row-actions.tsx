@@ -167,7 +167,7 @@ export function ProductRowActions({
           </DropdownMenuLabel>
           <DropdownMenuItem
             onClick={() => setIsEditOpen(true)}
-            className="cursor-pointer gap-2 text-blue-600 text-sm"
+            className="cursor-pointer gap-2 text-primary text-sm"
           >
             <Pencil className="h-4 w-4" /> Editar
           </DropdownMenuItem>

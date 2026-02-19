@@ -43,7 +43,7 @@ export default async function DashboardLayout({
 
   return (
     <div className="flex flex-col min-h-screen w-full bg-background">
-      <header className="sticky top-0 z-40 flex shrink-0 items-center justify-end border-b border-border bg-background/95 px-4 py-2 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+      <header className="sticky top-0 z-40 flex shrink-0 items-center justify-start border-b border-border bg-background/95 px-4 py-2 backdrop-blur supports-[backdrop-filter]:bg-background/80">
         <ThemeToggle />
       </header>
       <div className="flex flex-1 overflow-hidden">
