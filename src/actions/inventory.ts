@@ -297,3 +297,98 @@ export async function registerReturnAddStock(
     return { error: "Erro ao registrar. Tente novamente." };
   }
 }
+
+export type AddIncomingEntry = { storeId: string; quantity: number };
+
+/**
+ * Adiciona novas peças ao estoque do produto (entrada de mercadoria).
+ * Soma as quantidades informadas por loja ao estoque já existente.
+ * Cria linha de estoque se não existir na loja.
+ */
+export async function addIncomingStock(
+  productId: string,
+  variantId: string | null,
+  entries: AddIncomingEntry[],
+) {
+  const session = await getUserSession();
+  if (!session?.user?.id) return { error: "Não autorizado" };
+
+  const validEntries = entries
+    .map((e) => ({ storeId: e.storeId, quantity: Math.floor(Number(e.quantity)) }))
+    .filter((e) => e.quantity > 0);
+  if (validEntries.length === 0)
+    return { error: "Informe ao menos uma loja com quantidade maior que zero." };
+
+  try {
+    const orgId = session.organizationId;
+
+    const [product] = await db
+      .select({ id: products.id })
+      .from(products)
+      .where(
+        and(
+          eq(products.id, productId),
+          eq(products.organizationId, orgId),
+        ),
+      )
+      .limit(1);
+    if (!product) return { error: "Produto não encontrado." };
+
+    await db.transaction(async (tx) => {
+      for (const { storeId, quantity: qty } of validEntries) {
+        const [store] = await tx
+          .select({ id: stores.id })
+          .from(stores)
+          .where(
+            and(eq(stores.id, storeId), eq(stores.organizationId, orgId)),
+          )
+          .limit(1);
+        if (!store) continue;
+
+        const whereInv = variantId
+          ? and(
+              eq(inventory.storeId, storeId),
+              eq(inventory.variantId, variantId),
+            )
+          : and(
+              eq(inventory.storeId, storeId),
+              eq(inventory.productId, productId),
+              isNull(inventory.variantId),
+            );
+
+        const [inv] = await tx
+          .select({ id: inventory.id, quantity: inventory.quantity })
+          .from(inventory)
+          .where(whereInv)
+          .limit(1);
+
+        if (inv) {
+          const current = inv.quantity ?? 0;
+          await tx
+            .update(inventory)
+            .set({
+              quantity: current + qty,
+              updatedAt: new Date(),
+            })
+            .where(eq(inventory.id, inv.id));
+        } else {
+          await tx.insert(inventory).values({
+            storeId,
+            productId,
+            variantId,
+            quantity: qty,
+            minStock: 5,
+          });
+        }
+      }
+    });
+
+    revalidatePath("/inventory/products");
+    revalidatePath("/pos");
+    revalidatePath("/dashboard");
+    return { success: true, message: "Novas peças adicionadas ao estoque com sucesso!" };
+  } catch (err) {
+    console.error("Erro ao adicionar novas peças:", err);
+    return { error: "Erro ao atualizar estoque. Tente novamente." };
+  }
+}
