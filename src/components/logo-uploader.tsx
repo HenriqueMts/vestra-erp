@@ -1,12 +1,12 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { uploadLogo } from "@/actions/upload";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Loader2, UploadCloud } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { createClient } from "@/utils/supabase/client";
 
 interface LogoUploaderProps {
   initialUrl?: string | null;
@@ -39,18 +39,48 @@ export function LogoUploader({
     const objectUrl = URL.createObjectURL(file);
     setPreview(objectUrl);
 
-    const formData = new FormData();
-    formData.append("file", file);
-
     try {
-      const result = await uploadLogo(formData);
+      // Obter organizationId
+      const orgRes = await fetch("/api/upload/get-org-id");
+      const orgData = await orgRes.json();
+      if (!orgRes.ok || !orgData.organizationId) {
+        toast.error("Erro", { description: "Não foi possível obter informações da organização." });
+        setPreview(initialUrl);
+        setIsUploading(false);
+        return;
+      }
 
-      if (result.error) {
-        toast.error("Erro ao atualizar logo", { description: result.error });
-        setPreview(initialUrl); // Reverte se der erro
+      const supabase = createClient();
+      const fileExt = file.name.split(".").pop() || "jpg";
+      const fileName = `${orgData.organizationId}-${Date.now()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("logos")
+        .upload(fileName, file, { upsert: true });
+
+      if (uploadError) {
+        console.error("Erro upload:", uploadError);
+        toast.error("Erro ao atualizar logo", { description: "Falha ao enviar imagem." });
+        setPreview(initialUrl);
+        setIsUploading(false);
+        return;
+      }
+
+      // Atualizar no banco via API route
+      const updateRes = await fetch("/api/upload/logo/update", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fileName }),
+      });
+
+      const updateResult = await updateRes.json();
+
+      if (!updateRes.ok || updateResult.error) {
+        toast.error("Erro", { description: updateResult.error || "Falha ao salvar URL no banco." });
+        setPreview(initialUrl);
       } else {
         toast.success("Logo atualizado com sucesso!");
-        router.refresh(); // Atualiza a página para refletir no header
+        router.refresh();
       }
     } catch (error) {
       console.error(error);
