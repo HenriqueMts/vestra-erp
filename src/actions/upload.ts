@@ -21,11 +21,11 @@ export async function uploadLogo(formData: FormData) {
     return { error: "Nenhum arquivo enviado." };
   }
 
-  // Validação simples (Tamanho máx 2MB e tipo imagem)
-  if (file.size > 2 * 1024 * 1024) {
-    return { error: "A imagem deve ter no máximo 2MB." };
+  if (file.size > 20 * 1024 * 1024) {
+    return { error: "A imagem deve ter no máximo 20MB." };
   }
-  if (!file.type.startsWith("image/")) {
+  const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
+  if (!file.type.startsWith("image/") && ext !== "img") {
     return { error: "Apenas arquivos de imagem são permitidos." };
   }
 
@@ -83,8 +83,8 @@ export async function uploadProductImage(formData: FormData) {
     return { error: "Nenhum arquivo enviado." };
   }
 
-  if (file.size > 5 * 1024 * 1024) {
-    return { error: "A imagem deve ter no máximo 5MB." };
+  if (file.size > 20 * 1024 * 1024) {
+    return { error: "A imagem deve ter no máximo 20MB." };
   }
 
   const supabase = await createClient();

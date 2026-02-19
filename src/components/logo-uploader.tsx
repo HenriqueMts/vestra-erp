@@ -28,8 +28,8 @@ export function LogoUploader({
     const file = e.target.files[0];
 
     // Validação básica
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error("Erro", { description: "O logo deve ter no máximo 2MB." });
+    if (file.size > 20 * 1024 * 1024) {
+      toast.error("Erro", { description: "O logo deve ter no máximo 20MB." });
       return;
     }
 
@@ -83,7 +83,7 @@ export function LogoUploader({
           Logo da Empresa
         </h3>
         <p className="text-xs sm:text-sm text-slate-600 max-w-sm">
-          Recomendado: JPG ou PNG, pelo menos 400x400px. Máximo 2MB.
+          Recomendado: JPG ou PNG, pelo menos 400x400px. Máximo 20MB.
         </p>
 
         <div className="flex justify-center sm:justify-start">
@@ -103,7 +103,7 @@ export function LogoUploader({
           type="file"
           ref={fileInputRef}
           className="hidden"
-          accept="image/*"
+          accept="image/*,.img"
           onChange={handleFileSelect}
         />
       </div>

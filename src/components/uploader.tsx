@@ -50,9 +50,9 @@ export function LogoUploader({
   return (
     <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 sm:gap-8">
       <div className="relative group">
-        <Avatar className="h-20 w-20 sm:h-24 sm:w-24 border-2 border-slate-100 shadow-md">
+        <Avatar className="h-20 w-20 sm:h-24 sm:w-24 border-2 border-border shadow-md">
           <AvatarImage src={preview || ""} className="object-cover" />
-          <AvatarFallback className="text-xl sm:text-2xl font-bold bg-slate-50 text-slate-400">
+          <AvatarFallback className="text-xl sm:text-2xl font-bold bg-muted text-muted-foreground">
             {orgName.substring(0, 2).toUpperCase()}
           </AvatarFallback>
         </Avatar>
@@ -65,11 +65,11 @@ export function LogoUploader({
       </div>
 
       <div className="flex-1 space-y-3 text-center sm:text-left">
-        <h3 className="font-semibold text-sm sm:text-base text-slate-900">
+        <h3 className="font-semibold text-sm sm:text-base text-foreground">
           Logo da Empresa
         </h3>
-        <p className="text-xs sm:text-sm text-slate-600">
-          Recomendado: JPG ou PNG, pelo menos 400x400px. Máximo 2MB.
+        <p className="text-xs sm:text-sm text-muted-foreground">
+          Recomendado: JPG ou PNG, pelo menos 400x400px. Máximo 20MB.
         </p>
 
         <div className="flex justify-center sm:justify-start">
@@ -89,7 +89,7 @@ export function LogoUploader({
           type="file"
           ref={fileInputRef}
           className="hidden"
-          accept="image/*"
+          accept="image/*,.img"
           onChange={handleFileSelect}
         />
       </div>
