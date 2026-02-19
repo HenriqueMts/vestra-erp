@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { MoreHorizontal, Pencil, Trash2, Barcode, Truck } from "lucide-react";
+import { MoreHorizontal, Pencil, Trash2, Barcode, Truck, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -42,7 +42,7 @@ import { toast } from "sonner";
 import { ProductForm } from "./product-form";
 import { deleteProduct } from "@/actions/products";
 import { BarcodeLabelPrintModal } from "./barcode-label-print-modal";
-import { transferStock } from "@/actions/inventory";
+import { transferStock, addIncomingStock } from "@/actions/inventory";
 import type { ProductOptions, ProductInitialData } from "@/types/product";
 
 interface ProductRowActionsProps {
@@ -96,12 +96,17 @@ export function ProductRowActions({
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isBarcodeOpen, setIsBarcodeOpen] = useState(false);
   const [isTransferOpen, setIsTransferOpen] = useState(false);
+  const [isAddStockOpen, setIsAddStockOpen] = useState(false);
 
   const [transferFromStoreId, setTransferFromStoreId] = useState("");
   const [transferToStoreId, setTransferToStoreId] = useState("");
   const [transferVariantId, setTransferVariantId] = useState<string | null>(null);
   const [transferQty, setTransferQty] = useState("");
   const [transferLoading, setTransferLoading] = useState(false);
+
+  const [addStockVariantId, setAddStockVariantId] = useState<string | null>(null);
+  const [addStockQuantities, setAddStockQuantities] = useState<Record<string, string>>({});
+  const [addStockLoading, setAddStockLoading] = useState(false);
 
   const hasVariants = variants.length > 0;
 
@@ -166,10 +171,14 @@ export function ProductRowActions({
             Ações
           </DropdownMenuLabel>
           <DropdownMenuItem
-            onClick={() => setIsEditOpen(true)}
-            className="cursor-pointer gap-2 text-primary text-sm"
+            onClick={() => {
+              setAddStockVariantId(null);
+              setAddStockQuantities({});
+              setIsAddStockOpen(true);
+            }}
+            className="cursor-pointer gap-2 text-foreground text-sm"
           >
-            <Pencil className="h-4 w-4" /> Editar
+            <Plus className="h-4 w-4" /> Adicionar Estoque
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() => setIsBarcodeOpen(true)}
@@ -188,6 +197,12 @@ export function ProductRowActions({
             className="cursor-pointer gap-2 text-foreground text-sm"
           >
             <Truck className="h-4 w-4" /> Transferir para outra loja
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() => setIsEditOpen(true)}
+            className="cursor-pointer gap-2 text-primary text-sm"
+          >
+            <Pencil className="h-4 w-4" /> Editar
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem
@@ -234,6 +249,135 @@ export function ProductRowActions({
         }))}
         options={options}
       />
+
+      <Dialog open={isAddStockOpen} onOpenChange={setIsAddStockOpen}>
+        <DialogContent className="bg-card max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Adicionar Estoque</DialogTitle>
+            <DialogDescription>
+              Adicione a quantidade de novos itens que chegaram para cada loja.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            {hasVariants && (
+              <div className="grid gap-2">
+                <Label>Variante</Label>
+                <Select
+                  value={addStockVariantId ?? ""}
+                  onValueChange={(val) => {
+                    setAddStockVariantId(val || null);
+                    setAddStockQuantities({});
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione a variante" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {variants.map((v) => {
+                      const total = v.inventory.reduce(
+                        (s, i) => s + (i.quantity ?? 0),
+                        0,
+                      );
+                      return (
+                        <SelectItem key={v.id} value={v.id}>
+                          {getVariantLabel(v)} ({total} un)
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {(!hasVariants || addStockVariantId) && (
+              <div className="space-y-4">
+                <Label>Quantidade por Loja</Label>
+                {options.stores.map((store) => {
+                  const currentStock = hasVariants && addStockVariantId
+                    ? variants
+                        .find((v) => v.id === addStockVariantId)
+                        ?.inventory.find((i) => i.storeId === store.id)?.quantity ?? 0
+                    : inventory.find((i) => i.storeId === store.id)?.quantity ?? 0;
+
+                  return (
+                    <div key={store.id} className="flex items-center justify-between gap-4 border p-3 rounded-md">
+                      <div className="flex flex-col">
+                        <span className="font-medium text-sm">{store.name}</span>
+                        <span className="text-xs text-muted-foreground">
+                          Atual: {currentStock} un
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium">+</span>
+                        <Input
+                          type="number"
+                          min={0}
+                          placeholder="0"
+                          className="w-20 h-8"
+                          value={addStockQuantities[store.id] || ""}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            if (Number(val) < 0) return;
+                            setAddStockQuantities((prev) => ({
+                              ...prev,
+                              [store.id]: val,
+                            }));
+                          }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsAddStockOpen(false)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              disabled={
+                addStockLoading ||
+                (hasVariants && !addStockVariantId) ||
+                Object.values(addStockQuantities).every((q) => !q || Number(q) <= 0)
+              }
+              onClick={async () => {
+                const entries = Object.entries(addStockQuantities)
+                  .map(([storeId, qty]) => ({
+                    storeId,
+                    quantity: Number(qty),
+                  }))
+                  .filter((e) => e.quantity > 0);
+
+                if (entries.length === 0) return;
+
+                setAddStockLoading(true);
+                const result = await addIncomingStock(
+                  id,
+                  addStockVariantId,
+                  entries
+                );
+                setAddStockLoading(false);
+
+                if (result.error) {
+                  toast.error(result.error);
+                  return;
+                }
+
+                toast.success(result.message);
+                setIsAddStockOpen(false);
+                setAddStockVariantId(null);
+                setAddStockQuantities({});
+              }}
+            >
+              {addStockLoading ? "Adicionando..." : "Adicionar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={isTransferOpen} onOpenChange={setIsTransferOpen}>
         <DialogContent className="bg-card max-w-md">
