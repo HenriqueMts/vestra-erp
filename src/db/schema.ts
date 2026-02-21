@@ -289,6 +289,8 @@ export const sales = pgTable("sales", {
     .references(() => profiles.id, { onDelete: "restrict" }),
   paymentMethod: paymentMethodEnum("payment_method").notNull(),
   totalCents: integer("total_cents").notNull(),
+  surchargeCents: integer("surcharge_cents").default(0),
+  channel: text("channel").default("store"),
   createdAt: timestamp("created_at").defaultNow(),
   // Campos fiscais (nullable — nem todos emitem nota)
   invoiceStatus: text("invoice_status"),

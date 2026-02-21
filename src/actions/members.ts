@@ -1,127 +1,161 @@
 "use server";
 
 import { db } from "@/db";
-import { members, stores, profiles } from "@/db/schema"; // <--- ADICIONE PROFILES AQUI
+import { members, stores, profiles } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
 import { getUserSession } from "@/lib/get-user-session";
+import { revalidatePath } from "next/cache";
+import { createAdminClient } from "@/utils/supabase/admin";
 import { z } from "zod";
-import { createClient } from "@supabase/supabase-js";
-import { headers } from "next/headers";
 
-// --- VALIDATION SCHEMA ---
-const inviteSchema = z.object({
-  name: z.string().min(2),
-  email: z.string().email(),
+const inviteMemberSchema = z.object({
+  name: z.string().min(2, "Nome obrigatório"),
+  email: z.string().email("Email inválido"),
   role: z.enum(["manager", "seller"]),
   defaultStoreId: z.string().optional(),
 });
 
-type InviteInput = z.infer<typeof inviteSchema>;
+export async function updateMemberStore(memberId: string, newStoreId: string) {
+  const session = await getUserSession();
 
-type ActionResponse = {
-  success?: boolean;
-  message?: string;
-  error?: string;
-};
+  if (!session) {
+    return { error: "Não autorizado" };
+  }
 
-function getErrorMessage(error: unknown): string {
-  if (error instanceof Error) return error.message;
-  if (typeof error === "string") return error;
-  return "Ocorreu um erro desconhecido.";
+  // Apenas Dono ou Gerente podem alterar a loja de um funcionário
+  if (!["owner", "manager"].includes(session.role)) {
+    return { error: "Apenas donos e gerentes podem transferir funcionários." };
+  }
+
+  try {
+    // Verificar se o membro pertence à mesma organização
+    const [targetMember] = await db
+      .select()
+      .from(members)
+      .where(
+        and(
+          eq(members.id, memberId),
+          eq(members.organizationId, session.organizationId)
+        )
+      )
+      .limit(1);
+
+    if (!targetMember) {
+      return { error: "Funcionário não encontrado." };
+    }
+
+    // Verificar se a nova loja pertence à mesma organização
+    const [targetStore] = await db
+      .select()
+      .from(stores)
+      .where(
+        and(
+          eq(stores.id, newStoreId),
+          eq(stores.organizationId, session.organizationId)
+        )
+      )
+      .limit(1);
+
+    if (!targetStore) {
+      return { error: "Loja de destino inválida." };
+    }
+
+    // Atualizar a loja do membro
+    await db
+      .update(members)
+      .set({ defaultStoreId: newStoreId })
+      .where(eq(members.id, memberId));
+
+    revalidatePath("/team");
+    return { success: true, message: "Funcionário transferido com sucesso!" };
+  } catch (error) {
+    console.error("Erro ao transferir funcionário:", error);
+    return { error: "Erro ao transferir funcionário. Tente novamente." };
+  }
 }
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-    },
-  },
-);
+export async function inviteMember(data: z.infer<typeof inviteMemberSchema>) {
+  const session = await getUserSession();
 
-export async function inviteMember(data: InviteInput): Promise<ActionResponse> {
-  const { user, organizationId } = await getUserSession();
-
-  if (!user || !organizationId) {
-    return { error: "Sessão inválida ou não autorizado." };
+  if (!session || !["owner", "manager"].includes(session.role)) {
+    return { error: "Apenas donos e gerentes podem convidar membros." };
   }
 
-  const originHeader = (await headers()).get("origin");
-  let baseUrl =
-    process.env.NEXT_PUBLIC_APP_URL || originHeader || "http://localhost:3000";
-  // Garantir URL válida (ex.: https:/domain.com -> https://domain.com)
-  if (baseUrl.startsWith("https:/") && !baseUrl.startsWith("https://")) {
-    baseUrl = baseUrl.replace(/^https:\//, "https://");
+  const validated = inviteMemberSchema.safeParse(data);
+  if (!validated.success) {
+    return { error: "Dados inválidos." };
   }
-  if (baseUrl.startsWith("http:/") && !baseUrl.startsWith("http://")) {
-    baseUrl = baseUrl.replace(/^http:\//, "http://");
-  }
+
+  const { name, email, role, defaultStoreId } = validated.data;
+
   try {
-    const existing = await db.query.members.findFirst({
+    // Verificar se já existe membro com esse email na organização
+    const existingMember = await db.query.members.findFirst({
       where: and(
-        eq(members.organizationId, organizationId),
-        eq(members.email, data.email),
+        eq(members.email, email),
+        eq(members.organizationId, session.organizationId)
       ),
     });
 
-    if (existing) {
-      return { error: "Este e-mail já está cadastrado na equipe." };
+    if (existingMember) {
+      return { error: "Este e-mail já é membro da equipe." };
     }
 
-    const { data: inviteData, error: inviteError } =
-      await supabaseAdmin.auth.admin.inviteUserByEmail(data.email, {
-        data: { name: data.name },
-        // Invite não suporta PKCE; tokens vêm no hash. Redirecionar para /login
-// para o cliente processar o hash e enviar para /update-password quando type=invite.
-redirectTo: `${baseUrl}/login`,
-      });
+    const supabaseAdmin = createAdminClient();
 
-    if (inviteError) {
-      console.error("Erro Supabase Admin:", inviteError);
-      return { error: `Erro ao enviar convite: ${inviteError.message}` };
+    // Tenta convidar o usuário (envia email se configurado, ou apenas cria)
+    // Se o usuário já existe no Auth (outra org), inviteUserByEmail pode falhar ou apenas retornar o user.
+    // Aqui assumimos fluxo simples: criar usuário e mandar link de reset de senha ou magic link.
+    // Para simplificar e evitar erros de "user already exists", vamos tentar inviteUserByEmail.
+    
+    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
+      data: { name },
+      redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/update-password`,
+    });
+
+    if (authError) {
+      console.error("Erro ao convidar usuário Supabase:", authError);
+      return { error: "Erro ao enviar convite. Verifique o e-mail." };
     }
 
-    if (!inviteData.user) {
-      return { error: "Erro inesperado: Usuário não foi criado." };
-    }
+    const userId = authData.user.id;
 
+    // Criar perfil se não existir
     await db
       .insert(profiles)
       .values({
-        id: inviteData.user.id,
-        name: data.name,
-        email: data.email,
-        mustChangePassword: true,
+        id: userId,
+        name,
+        email,
       })
       .onConflictDoUpdate({
         target: profiles.id,
-        set: { mustChangePassword: true, name: data.name, email: data.email },
+        set: { name }, // Atualiza nome se já existir
       });
 
+    // Adicionar à tabela members
     await db.insert(members).values({
-      organizationId,
-      email: data.email,
-      userId: inviteData.user.id,
-      role: data.role,
-      defaultStoreId: data.defaultStoreId || null,
+      organizationId: session.organizationId,
+      userId,
+      email,
+      role,
+      defaultStoreId: defaultStoreId || null,
     });
 
     revalidatePath("/team");
-    return { success: true, message: "Convite enviado e membro adicionado!" };
+    return { success: true, message: "Convite enviado com sucesso!" };
   } catch (error) {
-    console.error("Server Action Error (inviteMember):", error);
-    return { error: getErrorMessage(error) };
+    console.error("Erro ao convidar membro:", error);
+    return { error: "Erro ao processar convite." };
   }
 }
 
-// --- REMOVER MEMBRO ---
-export async function deleteMember(memberId: string): Promise<ActionResponse> {
-  const { user, organizationId } = await getUserSession();
+export async function deleteMember(memberId: string) {
+  const session = await getUserSession();
 
-  if (!user || !organizationId) return { error: "Não autorizado." };
+  if (!session || !["owner", "manager"].includes(session.role)) {
+    return { error: "Apenas donos e gerentes podem remover membros." };
+  }
 
   try {
     const [memberToDelete] = await db
@@ -130,8 +164,8 @@ export async function deleteMember(memberId: string): Promise<ActionResponse> {
       .where(
         and(
           eq(members.id, memberId),
-          eq(members.organizationId, organizationId),
-        ),
+          eq(members.organizationId, session.organizationId)
+        )
       )
       .limit(1);
 
@@ -139,37 +173,29 @@ export async function deleteMember(memberId: string): Promise<ActionResponse> {
       return { error: "Membro não encontrado." };
     }
 
-    if (memberToDelete.userId) {
-      await supabaseAdmin.auth.admin.deleteUser(memberToDelete.userId);
+    if (memberToDelete.role === "owner") {
+      return { error: "Não é possível remover o dono da organização." };
     }
 
+    if (memberToDelete.userId === session.user.id) {
+      return { error: "Você não pode remover a si mesmo." };
+    }
+
+    // Remover da tabela members (o trigger ou cascade pode lidar com o resto, mas profiles fica)
     await db.delete(members).where(eq(members.id, memberId));
+
+    // Opcional: Remover do Supabase Auth se ele não pertencer a mais nenhuma organização?
+    // Por segurança, apenas removemos o acesso à organização atual (deletando de members).
+    // O usuário continua existindo no Auth e Profiles, mas sem acesso aos dados desta org.
+    
+    // Se quiser deletar o usuário do Auth (cuidado se ele tiver outras contas):
+    // const supabaseAdmin = createAdminClient();
+    // await supabaseAdmin.auth.admin.deleteUser(memberToDelete.userId);
 
     revalidatePath("/team");
     return { success: true, message: "Membro removido com sucesso." };
   } catch (error) {
-    console.error("Erro delete:", error);
-    const msg = getErrorMessage(error);
-    if (msg.includes("violates foreign key")) {
-      return {
-        error: "Membro possui vendas vinculadas e não pode ser removido.",
-      };
-    }
-    return { error: `Erro ao remover: ${msg}` };
-  }
-}
-
-export async function getStoreOptions() {
-  const { organizationId } = await getUserSession();
-  if (!organizationId) return [];
-
-  try {
-    const result = await db.query.stores.findMany({
-      where: eq(stores.organizationId, organizationId),
-      columns: { id: true, name: true },
-    });
-    return result;
-  } catch (error) {
-    return [];
+    console.error("Erro ao remover membro:", error);
+    return { error: "Erro ao remover membro." };
   }
 }

@@ -42,11 +42,18 @@ export type CartItem = {
   maxStock: number;
 };
 
-const PAYMENT_OPTIONS: { value: PaymentMethod; label: string }[] = [
+const PAYMENT_OPTIONS: { value: PaymentMethod | "ecommerce"; label: string }[] = [
   { value: "pix", label: "PIX" },
   { value: "credit", label: "Crédito" },
   { value: "debit", label: "Débito" },
   { value: "cash", label: "Dinheiro" },
+  { value: "ecommerce", label: "Ecommerce" },
+];
+
+const ECOMMERCE_PAYMENT_OPTIONS: { value: PaymentMethod; label: string }[] = [
+  { value: "pix", label: "PIX" },
+  { value: "credit", label: "Crédito" },
+  { value: "debit", label: "Débito" },
 ];
 
 interface PosCheckoutModalProps {
@@ -66,7 +73,10 @@ export function PosCheckoutModal({
   subtotal,
   onSuccess,
 }: Readonly<PosCheckoutModalProps>) {
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("pix");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | "ecommerce">("pix");
+  const [ecommercePaymentMethod, setEcommercePaymentMethod] = useState<PaymentMethod>("pix");
+  const [saleType, setSaleType] = useState<"wholesale" | "retail">("wholesale");
+  const [retailSurcharge, setRetailSurcharge] = useState("");
   const [documentValue, setDocumentValue] = useState("");
   const [client, setClient] = useState<PosClient | null>(null);
   const [searching, setSearching] = useState(false);
@@ -92,7 +102,14 @@ export function PosCheckoutModal({
     paymentMethod === "credit" && hasInterest
       ? Math.round((subtotal * interestRateBps) / 10_000)
       : 0;
-  const totalWithInterestCents = subtotal + interestCents;
+  const normalizedSurcharge = retailSurcharge.trim().replaceAll(",", ".");
+  const parsedSurcharge = Number(normalizedSurcharge);
+  const surchargeCents =
+    saleType === "retail" && Number.isFinite(parsedSurcharge)
+      ? Math.round(parsedSurcharge * 100)
+      : 0;
+
+  const totalWithInterestCents = subtotal + interestCents + surchargeCents;
 
   const docDigits = documentValue.replaceAll(/\D/g, "");
   const isDocValid = docDigits.length === 11 || docDigits.length === 14;
@@ -155,10 +172,12 @@ export function PosCheckoutModal({
       }));
       const result = await completeSale(
         storeId,
-        paymentMethod,
+        paymentMethod === "ecommerce" ? ecommercePaymentMethod : paymentMethod,
         items,
         client?.id ?? null,
         interestRateBps,
+        surchargeCents,
+        paymentMethod === "ecommerce",
       );
       if (result.error) {
         toast.error(result.error);
@@ -316,9 +335,104 @@ export function PosCheckoutModal({
                           </div>
                         </div>
                       )}
+                    {saleType === "retail" && surchargeCents > 0 && (
+                      <div className="mt-2 text-xs text-muted-foreground space-y-1">
+                        <div className="flex justify-between">
+                          <span>Subtotal</span>
+                          <span>
+                            {new Intl.NumberFormat("pt-BR", {
+                              style: "currency",
+                              currency: "BRL",
+                            }).format(subtotal / 100)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Acréscimo Varejo</span>
+                          <span>
+                            {new Intl.NumberFormat("pt-BR", {
+                              style: "currency",
+                              currency: "BRL",
+                            }).format(surchargeCents / 100)}
+                          </span>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div>
+                    <h4 className="text-sm font-semibold text-foreground mb-2">
+                      Tipo de Venda
+                    </h4>
+                    <div
+                      className="grid grid-cols-2 gap-2 mb-4"
+                      role="radiogroup"
+                      aria-label="Tipo de Venda"
+                    >
+                      <label
+                        className={`flex items-center gap-2 rounded-lg border px-3 py-2.5 cursor-pointer transition-colors ${
+                          saleType === "wholesale"
+                            ? "border-primary bg-primary/10 text-foreground"
+                            : "border-border hover:bg-muted/60"
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="saleType"
+                          value="wholesale"
+                          checked={saleType === "wholesale"}
+                          onChange={() => setSaleType("wholesale")}
+                          className="sr-only"
+                        />
+                        <span className="text-sm font-medium">Atacado</span>
+                      </label>
+                      <label
+                        className={`flex items-center gap-2 rounded-lg border px-3 py-2.5 cursor-pointer transition-colors ${
+                          saleType === "retail"
+                            ? "border-primary bg-primary/10 text-foreground"
+                            : "border-border hover:bg-muted/60"
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="saleType"
+                          value="retail"
+                          checked={saleType === "retail"}
+                          onChange={() => setSaleType("retail")}
+                          className="sr-only"
+                        />
+                        <span className="text-sm font-medium">Varejo</span>
+                      </label>
+                    </div>
+
+                    {saleType === "retail" && (
+                      <div className="rounded-lg border border-border bg-card p-3 mb-4">
+                        <div className="flex items-center gap-2">
+                          <Label
+                            htmlFor="pos-retail-surcharge"
+                            className="text-foreground shrink-0"
+                          >
+                            Acréscimo Total (R$)
+                          </Label>
+                          <div className="relative flex-1">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
+                              R$
+                            </span>
+                            <Input
+                              id="pos-retail-surcharge"
+                              type="number"
+                              inputMode="decimal"
+                              step="0.01"
+                              min="0"
+                              placeholder="0,00"
+                              value={retailSurcharge}
+                              onChange={(e) => setRetailSurcharge(e.target.value)}
+                              className="pl-9"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
                     <h4 className="text-sm font-semibold text-foreground mb-2">
                       Forma de pagamento
                     </h4>
@@ -356,6 +470,44 @@ export function PosCheckoutModal({
                         </label>
                       ))}
                     </div>
+
+                    {paymentMethod === "ecommerce" && (
+                      <div className="mt-4 p-4 border rounded-lg bg-card">
+                        <h4 className="text-sm font-semibold text-foreground mb-2">
+                          Forma de pagamento (Ecommerce)
+                        </h4>
+                        <div
+                          className="grid grid-cols-2 gap-2"
+                          role="radiogroup"
+                          aria-label="Forma de pagamento Ecommerce"
+                        >
+                          {ECOMMERCE_PAYMENT_OPTIONS.map((opt) => (
+                            <label
+                              key={opt.value}
+                              className={`flex items-center gap-2 rounded-lg border px-3 py-2.5 cursor-pointer transition-colors ${
+                                ecommercePaymentMethod === opt.value
+                                  ? "border-primary bg-primary/10 text-foreground"
+                                  : "border-border hover:bg-muted/60"
+                              }`}
+                            >
+                              <input
+                                type="radio"
+                                name="ecommercePayment"
+                                value={opt.value}
+                                checked={ecommercePaymentMethod === opt.value}
+                                onChange={() =>
+                                  setEcommercePaymentMethod(opt.value as PaymentMethod)
+                                }
+                                className="sr-only"
+                              />
+                              <span className="text-sm font-medium">
+                                {opt.label}
+                              </span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {paymentMethod === "credit" && (

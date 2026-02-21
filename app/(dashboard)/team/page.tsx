@@ -15,7 +15,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { InviteModal } from "./invite-modal";
 import { MapPin, ShieldAlert } from "lucide-react";
-import { DeleteMemberButton } from "@/components/delete-member-button";
+import { TeamMemberRowActions } from "./team-member-row-actions";
 
 export default async function TeamPage() {
   const adminCheck = await isAdmin();
@@ -40,6 +40,7 @@ export default async function TeamPage() {
       email: members.email, // Email do convite
       profileName: profiles.name, // Nome se já tiver cadastro
       profileEmail: profiles.email,
+      defaultStoreId: members.defaultStoreId,
       storeName: stores.name, // Nome da loja vinculada
     })
     .from(members)
@@ -107,9 +108,16 @@ export default async function TeamPage() {
                   </CardDescription>
                 </div>
 
-                {canDelete && (
-                  <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                    <DeleteMemberButton memberId={member.id} />
+                {/* Ações (Dropdown) */}
+                {(isManagerOrOwner && !isTargetOwner) && (
+                  <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                    <TeamMemberRowActions
+                      memberId={member.id}
+                      memberName={displayName}
+                      currentStoreId={member.defaultStoreId}
+                      stores={organizationStores}
+                      canDelete={canDelete}
+                    />
                   </div>
                 )}
               </CardHeader>
