@@ -36,6 +36,8 @@ export async function completeSale(
   items: SaleItemInput[],
   clientId: string | null,
   interestRateBps?: number | null,
+  surchargeCents?: number | null,
+  isEcommerce?: boolean,
 ) {
   const session = await getUserSession();
   if (!session?.user?.id) return { error: "Não autorizado" };
@@ -65,30 +67,35 @@ export async function completeSale(
     (baseTotalCents * effectiveInterestRateBps) / 10_000,
   );
 
-  const totalCents = baseTotalCents + interestCents;
+  const extraCents = surchargeCents && surchargeCents > 0 ? surchargeCents : 0;
+
+  const totalCents = baseTotalCents + interestCents + extraCents;
 
   try {
     const startOfDay = getStartOfDayBrazil();
     const endOfDay = getEndOfDayBrazil();
 
-    const [existingClosure] = await db
-      .select({ id: cashClosures.id })
-      .from(cashClosures)
-      .where(
-        and(
-          eq(cashClosures.organizationId, session.organizationId),
-          eq(cashClosures.storeId, storeId),
-          gte(cashClosures.periodStart, startOfDay),
-          lte(cashClosures.periodStart, endOfDay),
-        ),
-      )
-      .limit(1);
+    // Se não for ecommerce, verifica se o caixa está fechado
+    if (!isEcommerce) {
+      const [existingClosure] = await db
+        .select({ id: cashClosures.id })
+        .from(cashClosures)
+        .where(
+          and(
+            eq(cashClosures.organizationId, session.organizationId),
+            eq(cashClosures.storeId, storeId),
+            gte(cashClosures.periodStart, startOfDay),
+            lte(cashClosures.periodStart, endOfDay),
+          ),
+        )
+        .limit(1);
 
-    if (existingClosure) {
-      return {
-        error:
-          "O caixa do dia já foi fechado. Reabra o caixa para realizar novas vendas.",
-      };
+      if (existingClosure) {
+        return {
+          error:
+            "O caixa do dia já foi fechado. Reabra o caixa para realizar novas vendas.",
+        };
+      }
     }
 
     // Validar loja e cliente (se informado)
@@ -169,6 +176,8 @@ export async function completeSale(
           sellerId: session.user.id,
           paymentMethod,
           totalCents,
+          channel: isEcommerce ? "ecommerce" : "store",
+          surchargeCents: extraCents,
         })
         .returning({ id: sales.id });
 
@@ -373,6 +382,7 @@ export async function closeDailyCash(storeId?: string | null) {
         eq(sales.storeId, effectiveStoreId),
         gte(sales.createdAt, startOfDay),
         lte(sales.createdAt, endOfDay),
+        eq(sales.channel, "store"),
       ),
     );
 
@@ -514,6 +524,7 @@ export async function getDailySales(storeId?: string | null) {
         eq(sales.storeId, effectiveStoreId),
         gte(sales.createdAt, startOfDay),
         lte(sales.createdAt, endOfDay),
+        eq(sales.channel, "store"),
       ),
     );
 
