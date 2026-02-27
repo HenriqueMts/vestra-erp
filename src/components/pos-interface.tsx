@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -98,13 +98,7 @@ export function POSInterface({
   const [search, setSearch] = useState("");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [saleId] = useState<string>(() => {
-    // Generate sale ID only on client to avoid hydration mismatch
-    if (typeof window === "undefined") return "";
-    return Math.floor(Math.random() * 10000)
-      .toString()
-      .padStart(4, "0");
-  });
+  const [saleId, setSaleId] = useState<string | null>(null);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [isExchangeReturnOpen, setIsExchangeReturnOpen] = useState(false);
@@ -127,6 +121,14 @@ export function POSInterface({
     null,
   );
   const router = useRouter();
+
+  useEffect(() => {
+    // Gera o ID da venda apenas após o componente montar no cliente
+    const id = Math.floor(Math.random() * 10000)
+      .toString()
+      .padStart(4, "0");
+    setSaleId(id);
+  }, []);
 
   const categories = useMemo(() => {
     const seen = new Map<string, string>();
@@ -520,7 +522,7 @@ export function POSInterface({
               Sacola
             </h3>
             <p className="text-xs sm:text-sm text-muted-foreground truncate">
-              ID da Venda: #{saleId}
+              ID da Venda: #{saleId ?? "----"}
             </p>
           </div>
           <div className="bg-muted px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium flex-shrink-0 ml-2 text-foreground">
@@ -1028,7 +1030,7 @@ export function POSInterface({
                 Sacola
               </h3>
               <p className="text-xs sm:text-sm text-muted-foreground truncate">
-                ID da Venda: #{saleId}
+                ID da Venda: #{saleId ?? "----"}
               </p>
             </div>
             <div className="bg-muted px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium shrink-0 ml-2 text-foreground">

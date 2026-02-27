@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useEffect } from "react";
+import { useState, useTransition, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import {
@@ -153,6 +153,22 @@ export function CashClosureClient({
   const [selectedStoreId, setSelectedStoreId] = useState(storeId || stores[0]?.id || "");
   const [reportData, setReportData] = useState<ClosureReportData | null>(null);
   const [loadingReport, setLoadingReport] = useState(false);
+  const [selectedSellerId, setSelectedSellerId] = useState<string | null>(null);
+
+  const sellersForStore = useMemo(() => {
+    const unique = new Map<string, { id: string; name: string }>();
+    for (const sale of initialData.sales) {
+      if (sale.seller && sale.seller.id && sale.seller.name && !unique.has(sale.seller.id)) {
+        unique.set(sale.seller.id, { id: sale.seller.id, name: sale.seller.name });
+      }
+    }
+    return Array.from(unique.values());
+  }, [initialData.sales]);
+
+  const filteredSales =
+    selectedSellerId == null
+      ? initialData.sales
+      : initialData.sales.filter((sale) => sale.seller?.id === selectedSellerId);
 
   // Sincronizar estado quando loja mudar via query param
   useEffect(() => {
@@ -494,13 +510,46 @@ export function CashClosureClient({
           <CardDescription>
             Lista completa de todas as vendas realizadas hoje
           </CardDescription>
+          {sellersForStore.length > 0 && (
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <span className="text-xs text-muted-foreground">Filtrar por vendedor:</span>
+              <Button
+                type="button"
+                size="sm"
+                variant={selectedSellerId === null ? "default" : "outline"}
+                onClick={() => setSelectedSellerId(null)}
+              >
+                Todos
+              </Button>
+              {sellersForStore.map((seller) => {
+                const firstName = seller.name.split(" ")[0] || seller.name;
+                const isActive = selectedSellerId === seller.id;
+                return (
+                  <Button
+                    key={seller.id}
+                    type="button"
+                    size="sm"
+                    variant={isActive ? "default" : "outline"}
+                    onClick={() =>
+                      setSelectedSellerId((current) =>
+                        current === seller.id ? null : seller.id,
+                      )
+                    }
+                  >
+                    {firstName}
+                  </Button>
+                );
+              })}
+            </div>
+          )}
         </CardHeader>
         <CardContent>
-          {initialData.sales.length === 0 ? (
+          {filteredSales.length === 0 ? (
             <div className="rounded-lg border border-dashed border-border bg-muted/50 p-8 text-center">
               <Receipt className="mx-auto h-10 w-10 text-muted-foreground" />
               <p className="mt-2 text-sm text-muted-foreground">
-                Nenhuma venda registrada hoje.
+                Nenhuma venda registrada hoje
+                {selectedSellerId ? " para este vendedor." : "."}
               </p>
             </div>
           ) : (
@@ -518,7 +567,7 @@ export function CashClosureClient({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {initialData.sales.map((sale) => (
+                  {filteredSales.map((sale) => (
                     <TableRow key={sale.id}>
                       <TableCell className="font-mono text-xs">
                         {sale.id.slice(0, 8)}...
