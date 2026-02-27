@@ -1,36 +1,176 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Vestra ERP
 
-## Getting Started
+Sistema de gestão empresarial para lojas de **atacado e varejo**, com foco em moda. Controle de estoque, PDV, clientes, equipe e relatórios em uma única plataforma.
 
-First, run the development server:
+**Produção:** [vestra.app.br](https://vestra.app.br)
+
+---
+
+## Sobre o projeto
+
+O Vestra ERP permite que empresas gerenciem múltiplas lojas, cadastrem produtos com variantes (cor e tamanho), realizem vendas no ponto de venda (PDV), acompanhem o fluxo de caixa e acessem dashboards e relatórios. Inclui integração com cobrança (Asaas) e emissão de notas fiscais (Focus NFe), além de versão desktop instalável (Tauri).
+
+---
+
+## Funcionalidades
+
+| Módulo | Descrição |
+|--------|-----------|
+| **PDV** | Frente de caixa com busca por produto/SKU, seleção de variantes, formas de pagamento (PIX, crédito, débito, dinheiro) e vínculo com cliente |
+| **Produtos e estoque** | Cadastro com categorias, cores, tamanhos, imagens e controle de estoque por loja |
+| **Multi-lojas** | Organizações com várias unidades, estoque independente e troca de loja no PDV |
+| **CRM** | Cadastro de clientes (PF/PJ), CPF/CNPJ e histórico de vendas |
+| **Equipe** | Membros por organização com perfis (owner, manager, seller) e convites por e-mail |
+| **Dashboard** | Visão geral de vendas, caixa e operação |
+| **Fechamento de caixa** | Registro e impressão de fechamento |
+| **Cobrança** | Integração Asaas para assinaturas e status de pagamento por organização |
+| **Notas fiscais** | Integração Focus NFe para emissão (homologação e produção) |
+| **App desktop** | Versão instalável (Windows e outros) que abre o sistema na web |
+
+---
+
+## Stack tecnológica
+
+- **Frontend:** [Next.js](https://nextjs.org) 16 (App Router), [React](https://react.dev) 19, [Tailwind CSS](https://tailwindcss.com), [Radix UI](https://www.radix-ui.com), [Recharts](https://recharts.org)
+- **Auth e storage:** [Supabase](https://supabase.com) (Auth + Storage)
+- **Banco de dados:** PostgreSQL com [Drizzle ORM](https://orm.drizzle.team)
+- **Formulários e validação:** React Hook Form, Zod
+- **Integrações:** Asaas (cobrança), Focus NFe (notas fiscais)
+- **Desktop:** [Tauri](https://tauri.app) 2 (app nativo que carrega a URL do sistema)
+
+---
+
+## Pré-requisitos
+
+- [Node.js](https://nodejs.org) 20+
+- [pnpm](https://pnpm.io) / npm / yarn
+- PostgreSQL (local ou Supabase)
+- Conta [Supabase](https://supabase.com) e, opcionalmente, Asaas e Focus NFe
+
+---
+
+## Instalação
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# Clone o repositório
+git clone https://github.com/seu-usuario/vestra-erp.git
+cd vestra-erp
+
+# Instale as dependências
+npm install
+
+# Copie o exemplo de variáveis de ambiente
+cp .env.example .env.local
+
+# Edite .env.local com suas chaves e URLs
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Configure as variáveis em `.env.local` conforme o `.env.example`. As obrigatórias para rodar em desenvolvimento são:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- `NEXT_PUBLIC_APP_URL` – URL do app (ex.: `http://localhost:3000`)
+- `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `DATABASE_URL` – connection string do PostgreSQL
+- `SUPABASE_SERVICE_ROLE_KEY` – para operações server-side no Supabase
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Asaas e Focus NFe são opcionais para uso local.
 
-## Learn More
+---
 
-To learn more about Next.js, take a look at the following resources:
+## Scripts
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| Comando | Descrição |
+|---------|-----------|
+| `npm run dev` | Sobe o servidor de desenvolvimento em [http://localhost:3000](http://localhost:3000) |
+| `npm run build` | Build de produção (Next.js) |
+| `npm run start` | Sobe o servidor em modo produção (após `build`) |
+| `npm run lint` | Executa o linter |
+| `npm run desktop:dev` | Sobe o Next e abre a janela do app desktop (Tauri) |
+| `npm run desktop:build` | Gera o instalador do app desktop |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+---
 
-## Deploy on Vercel
+## Variáveis de ambiente
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Consulte o arquivo **`.env.example`** para a lista completa. Resumo:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **Públicas** (enviadas ao cliente; não use para segredos):  
+  `NEXT_PUBLIC_APP_URL`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- **Secretas** (apenas servidor):  
+  `DATABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `ASAAS_API_KEY`, `ASAAS_WEBHOOK_TOKEN`, `FOCUS_NFE_TOKEN*`, `VESTRA_ADMIN_EMAILS`
+
+Em produção (ex.: Vercel), defina `NEXT_PUBLIC_APP_URL=https://vestra.app.br` para redirects de autenticação e links funcionarem corretamente.
+
+---
+
+## App desktop (Tauri)
+
+O app desktop é uma janela que carrega o Vestra na web. O usuário não precisa rodar Node nem servidor local; basta ter o instalador e internet.
+
+- **Desenvolvimento:** `npm run desktop:dev` — inicia o Next e abre a janela Tauri em localhost.
+- **Build do instalador:** `npm run desktop:build`. O instalador é gerado em `src-tauri/target/release/bundle/`. Por padrão o app abre **https://vestra.app.br/login**. Para usar outra URL: `VESTRA_APP_URL=https://sua-url npm run build:tauri` antes de `npm run desktop:build`.
+
+### Verificador de atualizações
+
+Ao abrir o app, o Tauri consulta a API de updates (`/api/tauri-update/...`). Se houver versão mais nova, é exibida uma janela com as notas e um botão para **Atualizar agora**; o instalador é baixado e executado e o app é fechado.
+
+**Publicar uma nova versão:**
+
+1. Aumentar a versão em `src-tauri/tauri.conf.json` (e opcionalmente em `package.json`).
+2. **Chave de assinatura** (uma vez por projeto):  
+   `npx tauri signer generate -w ~/.tauri/vestra.key`  
+   Colocar a **chave pública** em `tauri.conf.json` → `plugins.updater.pubkey` (substituir o placeholder).
+3. Build de release com assinatura:  
+   `TAURI_SIGNING_PRIVATE_KEY="caminho ou conteúdo da chave privada" npm run desktop:build`
+4. Enviar para o servidor:
+   - O instalador (ex.: `.nsis.zip` no Windows) para a URL que o cliente vai baixar.
+   - O arquivo `.sig` gerado no mesmo diretório do instalador.
+5. No servidor (Vercel/backend), definir:
+   - `TAURI_UPDATE_VERSION` = nova versão (ex.: `0.2.0`)
+   - `TAURI_UPDATE_URL_<TARGET>_<ARCH>` = URL do instalador (ex.: `TAURI_UPDATE_URL_WINDOWS_X86_64`)
+   - `TAURI_UPDATE_SIGNATURE_<TARGET>_<ARCH>` = conteúdo do `.sig`
+
+Exemplo de variáveis no `.env` do servidor: ver seção "Atualizações do app desktop" no `.env.example`.
+
+---
+
+## Segurança
+
+- No desktop, o usuário tem o mesmo acesso que no navegador (DevTools, rede, código do front). O app carrega a mesma URL (vestra.app.br); **segredos permanecem apenas no servidor**.
+- **Nunca** use o prefixo `NEXT_PUBLIC_` para chaves ou tokens; essas variáveis são enviadas ao cliente.
+- A proteção dos dados no Supabase depende do **RLS (Row Level Security)**; a anon key é pública por design.
+- Rotas e Server Actions sensíveis devem sempre validar sessão/autenticação no servidor.
+
+---
+
+## Deploy
+
+O projeto está preparado para deploy na [Vercel](https://vercel.com). Configure as variáveis de ambiente no painel do projeto e faça o deploy a partir do repositório Git. Para produção, use `NEXT_PUBLIC_APP_URL=https://vestra.app.br` (ou o domínio que utilizar).
+
+---
+
+## Estrutura do repositório
+
+```
+vestra-erp/
+├── app/                    # Rotas e páginas (Next.js App Router)
+│   ├── (auth)/             # Login, callback OAuth
+│   ├── (dashboard)/        # Dashboard, configurações, CRM, estoque, etc.
+│   ├── (pos)/              # PDV e seleção de loja
+│   └── api/                # Rotas de API (upload, webhooks)
+├── src/
+│   ├── actions/            # Server Actions
+│   ├── components/         # Componentes React
+│   ├── db/                 # Schema e cliente Drizzle
+│   ├── lib/                # Utilitários (Asaas, Focus, auth, etc.)
+│   └── utils/              # Supabase (client/server/admin), validadores
+├── src-tauri/              # Projeto Tauri (app desktop)
+├── scripts/                # Scripts de build (ex.: fallback para desktop)
+├── .env.example            # Exemplo de variáveis de ambiente
+└── README.md
+```
+
+---
+
+## Licença e contato
+
+Projeto privado. Para dúvidas ou suporte: **henrique.mts@outlook.com.br**.

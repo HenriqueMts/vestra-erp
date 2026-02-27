@@ -38,8 +38,6 @@ export async function login(formData: FormData) {
   });
 
   if (error) {
-    console.error("Erro de Login:", error.message);
-
     return {
       error: "E-mail ou senha incorretos. Verifique suas credenciais.",
     };

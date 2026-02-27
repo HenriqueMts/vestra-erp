@@ -1,12 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  experimental: {
-    serverActions: {
-      bodySizeLimit: "20mb",
-    },
-  },
+  // Sem output: "export" para Server Actions e API funcionarem.
+  // Para Tauri: use desktop:dev (abre localhost:3000) ou aponte o app para a URL do deploy.
   images: {
+    unoptimized: true,
     remotePatterns: [
       {
         protocol: "https",

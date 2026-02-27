@@ -19,17 +19,11 @@ function getApiKey(): string | null {
     }
   }
   
-  // Debug detalhado em desenvolvimento
+  // Debug em desenvolvimento (não logar partes da chave)
   if (process.env.NODE_ENV === "development") {
-    const rawKey = process.env.ASAAS_API_KEY;
-    const allAsaasVars = Object.keys(process.env).filter(k => k.startsWith("ASAAS"));
-    
-    console.log("[Asaas] ===== DEBUG ======");
-    console.log("[Asaas] Raw ASAAS_API_KEY:", rawKey ? `${rawKey.substring(0, 25)}... (length: ${rawKey.length})` : "undefined/null");
     console.log("[Asaas] ASAAS_ENV:", process.env.ASAAS_ENV);
-    console.log("[Asaas] Variáveis ASAAS encontradas:", allAsaasVars.length > 0 ? allAsaasVars : "NENHUMA");
-    console.log("[Asaas] Key após trim:", key ? `${key.substring(0, 25)}...` : "null");
-    
+    console.log("[Asaas] ASAAS_API_KEY:", key ? "configurada" : "não definida");
+
     if (!key) {
       console.error("[Asaas] ❌ ERRO: ASAAS_API_KEY não encontrada!");
       console.error("[Asaas] SOLUÇÕES:");
@@ -51,10 +45,9 @@ function getApiKey(): string | null {
       } else if (isProdKey && envSetting !== "production") {
         console.warn("[Asaas] ⚠️ ATENÇÃO: Chave PRODUÇÃO mas ASAAS_ENV não é 'production'");
       } else {
-        console.log("[Asaas] ✓ Chave detectada e ambiente configurado corretamente");
+        console.log("[Asaas] ✓ Chave e ambiente configurados");
       }
     }
-    console.log("[Asaas] ==================");
   }
   
   return key;

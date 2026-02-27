@@ -18,8 +18,6 @@ export async function GET(request: Request) {
     }
   }
 
-  // Sem code: fluxo invite/magic link envia tokens no hash (não suporta PKCE).
-  // O hash não chega ao servidor; o cliente trata em /login (ver login/page.tsx).
   return NextResponse.redirect(
     `${requestUrl.origin}/login?error=auth_code_error`,
   );
