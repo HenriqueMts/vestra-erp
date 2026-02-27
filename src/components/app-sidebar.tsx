@@ -43,7 +43,8 @@ interface AppSidebarProps {
 export function AppSidebar({ user, logo }: Readonly<AppSidebarProps>) {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
-  const canSeeSales = user.isAdmin || user.role === "owner" || user.role === "manager";
+  const canSeeSales =
+    user.isAdmin || user.role === "owner" || user.role === "manager";
 
   const isActive = (path: string) =>
     pathname === path || pathname.startsWith(`${path}/`);
@@ -161,7 +162,9 @@ export function AppSidebar({ user, logo }: Readonly<AppSidebarProps>) {
               <Users
                 size={18}
                 className={
-                  isActive("/crm") ? "text-sidebar-primary-foreground" : "text-muted-foreground"
+                  isActive("/crm")
+                    ? "text-sidebar-primary-foreground"
+                    : "text-muted-foreground"
                 }
               />
               <span>Clientes</span>
@@ -180,7 +183,9 @@ export function AppSidebar({ user, logo }: Readonly<AppSidebarProps>) {
                   <Users2
                     size={18}
                     className={
-                      isActive("/team") ? "text-sidebar-primary-foreground" : "text-muted-foreground"
+                      isActive("/team")
+                        ? "text-sidebar-primary-foreground"
+                        : "text-muted-foreground"
                     }
                   />
                   <span>Time</span>
@@ -198,29 +203,35 @@ export function AppSidebar({ user, logo }: Readonly<AppSidebarProps>) {
                   <Settings
                     size={18}
                     className={
-                      isActive("/settings") ? "text-sidebar-primary-foreground" : "text-muted-foreground"
+                      isActive("/settings")
+                        ? "text-sidebar-primary-foreground"
+                        : "text-muted-foreground"
                     }
                   />
                   <span>Configurações</span>
                 </Link>
 
-                <Link
-                  href="/minha-conta"
-                  onClick={closeMenu}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium text-sm transition-all ${
-                    isActive("/minha-conta")
-                      ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-md"
-                      : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                  }`}
-                >
-                  <CreditCard
-                    size={18}
-                    className={
-                      isActive("/minha-conta") ? "text-sidebar-primary-foreground" : "text-muted-foreground"
-                    }
-                  />
-                  <span>Plano de assinatura</span>
-                </Link>
+                {!user.isAdmin && (
+                  <Link
+                    href="/minha-conta"
+                    onClick={closeMenu}
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium text-sm transition-all ${
+                      isActive("/minha-conta")
+                        ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-md"
+                        : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                    }`}
+                  >
+                    <CreditCard
+                      size={18}
+                      className={
+                        isActive("/minha-conta")
+                          ? "text-sidebar-primary-foreground"
+                          : "text-muted-foreground"
+                      }
+                    />
+                    <span>Plano de assinatura</span>
+                  </Link>
+                )}
               </>
             )}
 
@@ -231,7 +242,7 @@ export function AppSidebar({ user, logo }: Readonly<AppSidebarProps>) {
                   Administração
                 </p>
                 <Link
-                  href="/dashboard/admin"
+                  href="/admin"
                   onClick={closeMenu}
                   className={`flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium text-sm transition-all ${
                     isActive("/dashboard/admin")

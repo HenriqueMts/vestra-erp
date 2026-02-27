@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { createUserWithPassword, createOrganizationWithUserAndStores } from "@/actions/admin";
 import { createAsaasCustomer, createOrUpdateSubscription } from "@/actions/billing";
 import { Button } from "@/components/ui/button";
@@ -23,7 +23,20 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Plus, Building2, Users, Mail, Calendar, CreditCard, CheckCircle2, XCircle, AlertCircle, Trash2 } from "lucide-react";
+import {
+  Plus,
+  Building2,
+  Users,
+  Mail,
+  Calendar,
+  CreditCard,
+  CheckCircle2,
+  XCircle,
+  AlertCircle,
+  Trash2,
+  UploadCloud,
+  Loader2,
+} from "lucide-react";
 import {
   Table,
   TableBody,
@@ -34,6 +47,8 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { createClient } from "@/utils/supabase/client";
 
 /** Próxima data de vencimento (YYYY-MM-DD) a partir do dia do mês (1-28). */
 function getNextDueDateFromDay(day: number): string {
@@ -92,6 +107,57 @@ export function AdminDashboardClient({
   const [stores, setStores] = useState<Array<{ name: string; address: string }>>([
     { name: "", address: "" },
   ]);
+  const [newOrgLogoUrl, setNewOrgLogoUrl] = useState<string | null>(null);
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const logoFileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const handleUploadNewOrgLogo = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 20 * 1024 * 1024) {
+      toast.error("Logo muito grande", {
+        description: "O logo deve ter no máximo 20MB.",
+      });
+      return;
+    }
+
+    try {
+      setIsUploadingLogo(true);
+      const supabase = createClient();
+      const ext = file.name.split(".").pop() || "jpg";
+      const filePath = `admin-new-org-${Date.now()}.${ext}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("logos")
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) {
+        console.error("Erro ao enviar logo da nova organização:", uploadError);
+        toast.error("Erro ao enviar logo", {
+          description:
+            "Não foi possível enviar o arquivo para o bucket de logos.",
+        });
+        return;
+      }
+
+      const { data } = supabase.storage.from("logos").getPublicUrl(filePath);
+      if (!data?.publicUrl) {
+        toast.error("Erro ao obter URL pública do logo.");
+        return;
+      }
+
+      setNewOrgLogoUrl(data.publicUrl);
+      toast.success("Logo enviado com sucesso!");
+    } catch (error) {
+      console.error(error);
+      toast.error("Erro inesperado ao enviar logo.");
+    } finally {
+      setIsUploadingLogo(false);
+    }
+  };
 
   const addStore = () => {
     setStores([...stores, { name: "", address: "" }]);
@@ -111,16 +177,17 @@ export function AdminDashboardClient({
 
   const handleCreateOrganization = async (formData: FormData) => {
     setIsCreatingOrg(true);
-    
+
     // Dados do usuário
     const userName = formData.get("userName") as string;
     const userEmail = formData.get("userEmail") as string;
     const userPassword = formData.get("userPassword") as string;
-    
+
     // Dados da organização
     const organizationName = formData.get("organizationName") as string;
     const organizationDocument = formData.get("organizationDocument") as string;
-    const organizationLogoUrl = formData.get("organizationLogoUrl") as string;
+    const organizationLogoUrl =
+      (formData.get("organizationLogoUrl") as string) ?? newOrgLogoUrl ?? "";
 
     // Validar lojas (remover vazias)
     const validStores = stores.filter((s) => s.name.trim().length >= 2);
@@ -369,13 +436,57 @@ export function AdminDashboardClient({
                       placeholder="000.000.000-00 ou 00.000.000/0000-00"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="organizationLogoUrl">URL do Logo</Label>
-                    <Input
-                      id="organizationLogoUrl"
+                  <div className="space-y-3">
+                    <Label>Logo da organização</Label>
+                    <div className="flex items-center gap-4">
+                      <Avatar className="h-14 w-14 rounded-lg">
+                        <AvatarImage
+                          src={newOrgLogoUrl ?? ""}
+                          alt="Logo da organização"
+                          className="object-cover"
+                        />
+                        <AvatarFallback className="rounded-lg bg-muted text-muted-foreground text-lg">
+                          LG
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="space-y-1">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="gap-2"
+                          disabled={isUploadingLogo}
+                          onClick={() => logoFileInputRef.current?.click()}
+                        >
+                          {isUploadingLogo ? (
+                            <>
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              Enviando...
+                            </>
+                          ) : (
+                            <>
+                              <UploadCloud className="h-4 w-4" />
+                              Enviar logo
+                            </>
+                          )}
+                        </Button>
+                        <p className="text-xs text-muted-foreground">
+                          Envie a imagem para o bucket <span className="font-mono">logos</span> do
+                          Supabase. Depois o cliente pode trocar o logo pela tela de configurações.
+                        </p>
+                      </div>
+                    </div>
+                    <input
+                      ref={logoFileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleUploadNewOrgLogo}
+                    />
+                    <input
+                      type="hidden"
                       name="organizationLogoUrl"
-                      type="url"
-                      placeholder="https://exemplo.com/logo.png"
+                      value={newOrgLogoUrl ?? ""}
                     />
                   </div>
                 </div>
