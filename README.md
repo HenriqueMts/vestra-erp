@@ -113,18 +113,74 @@ O app desktop é uma janela que carrega o Vestra na web. O usuário não precisa
 
 Ao abrir o app, o Tauri consulta a API de updates (`/api/tauri-update/...`). Se houver versão mais nova, é exibida uma janela com as notas e um botão para **Atualizar agora**; o instalador é baixado e executado e o app é fechado.
 
+#### Configurar a chave de assinatura (uma vez)
+
+A assinatura garante que só instaladores gerados por você sejam aceitos na atualização. Você gera um par de chaves: a **pública** vai no código; a **privada** fica só com você e é usada na hora do build.
+
+**Passo 1 – Gerar o par de chaves**
+
+No terminal, na pasta do projeto:
+
+```bash
+npx tauri signer generate -w vestra.key
+```
+
+- O comando cria o arquivo `vestra.key` na pasta atual (ou use um caminho, ex.: `C:\Users\henri\.tauri\vestra.key`).
+- **Guarde esse arquivo em local seguro e faça backup.** Quem tiver a chave privada pode assinar atualizações em nome do app.
+- O comando também **imprime no terminal** duas linhas longas (base64): uma começa com algo como `dW50...` (chave privada) e outra é a **chave pública**.
+
+**Passo 2 – Colocar a chave pública no projeto**
+
+1. Abra `src-tauri/tauri.conf.json`.
+2. Encontre `"pubkey": "REPLACE_WITH_PUBLIC_KEY_AFTER_TAURI_SIGNER_GENERATE"`.
+3. Substitua pelo valor da **chave pública** que o comando mostrou (a linha inteira, sem espaços extras). Exemplo:
+
+   `"pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmltdW0tc2l6ZSBra..."
+
+**Passo 3 – Usar a chave privada no build**
+
+O Tauri precisa da chave **privada** só na hora de gerar o instalador, para assinar o arquivo. Você pode passar de duas formas:
+
+**Opção A – Variável de ambiente com o conteúdo da chave**
+
+- Abra o arquivo `vestra.key` (ou o caminho que você usou em `-w`). Ele tem duas linhas: a primeira é a chave privada.
+- No terminal, **antes** de rodar o build, defina a variável com esse conteúdo:
+
+  **PowerShell (Windows):**
+  ```powershell
+  $env:TAURI_SIGNING_PRIVATE_KEY = Get-Content -Raw -Path ".\vestra.key" | ForEach-Object { ($_ -split "`n")[0] }
+  npm run desktop:build
+  ```
+
+  **Git Bash / Linux / macOS:**
+  ```bash
+  export TAURI_SIGNING_PRIVATE_KEY=$(head -1 vestra.key)
+  npm run desktop:build
+  ```
+
+**Opção B – Variável com o caminho do arquivo (onde suportado)**
+
+Algumas versões do Tauri aceitam o caminho do arquivo em vez do conteúdo. Ex. (PowerShell):
+
+```powershell
+$env:TAURI_SIGNING_PRIVATE_KEY = "C:\caminho\completo\para\vestra.key"
+npm run desktop:build
+```
+
+Se der erro de “private key not found”, use a Opção A (conteúdo da chave).
+
+**Importante:** não commite o arquivo `vestra.key` no Git. Coloque `vestra.key` (e o caminho que usar) no `.gitignore`.
+
+---
+
 **Publicar uma nova versão:**
 
 1. Aumentar a versão em `src-tauri/tauri.conf.json` (e opcionalmente em `package.json`).
-2. **Chave de assinatura** (uma vez por projeto):  
-   `npx tauri signer generate -w ~/.tauri/vestra.key`  
-   Colocar a **chave pública** em `tauri.conf.json` → `plugins.updater.pubkey` (substituir o placeholder).
-3. Build de release com assinatura:  
-   `TAURI_SIGNING_PRIVATE_KEY="caminho ou conteúdo da chave privada" npm run desktop:build`
-4. Enviar para o servidor:
+2. Build com a chave configurada (Passo 3 acima).
+3. Enviar para o servidor:
    - O instalador (ex.: `.nsis.zip` no Windows) para a URL que o cliente vai baixar.
    - O arquivo `.sig` gerado no mesmo diretório do instalador.
-5. No servidor (Vercel/backend), definir:
+4. No servidor (Vercel/backend), definir:
    - `TAURI_UPDATE_VERSION` = nova versão (ex.: `0.2.0`)
    - `TAURI_UPDATE_URL_<TARGET>_<ARCH>` = URL do instalador (ex.: `TAURI_UPDATE_URL_WINDOWS_X86_64`)
    - `TAURI_UPDATE_SIGNATURE_<TARGET>_<ARCH>` = conteúdo do `.sig`

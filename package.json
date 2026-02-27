@@ -9,7 +9,8 @@
     "start": "next start",
     "lint": "next lint",
     "desktop:dev": "tauri dev",
-    "desktop:build": "tauri build"
+    "desktop:build": "tauri build",
+    "desktop:build:signed": "node scripts/build-desktop-signed.js"
   },
   "dependencies": {
     "@base-ui/react": "^1.2.0",
